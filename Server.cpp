@@ -6,21 +6,25 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/06 10:33:49 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/06 15:04:13 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
-Server::Server(std::string ip_address, int port) : _ip_address(ip_address), _port(port), _socket(), _new_socket(), _socketAddress(), _socketAddress_len(sizeof(_socketAddress)), _serverMessage(buildResponse())
+Server::Server(std::string ip_address, int port) : _ip_address(ip_address), _port(port), _socket(), _new_socket(), _socketAddress(), _socketAddress_len(sizeof(_socketAddress)), _serverMessage(buildResponse("index.html"))
 {
+	//std::stringstream ss;
 	_socketAddress.sin_family = AF_INET;
 	_socketAddress.sin_port = htons(_port);
 	_socketAddress.sin_addr.s_addr = inet_addr(_ip_address.c_str());
 
+	/* ss << port;
+	std::string port_str = ss.str();
+	getaddrinfo("WebServ", port_str.c_str(), NULL, NULL); */
 	if (startServer() != 0)
 	{
-		std::cout << "Failed to start server with PORT: " << ntohs(_socketAddress.sin_port);
+		std::cout << "Failed to start server with PORT: " << ntohs(_socketAddress.sin_port) << std::endl;
 		exit(1);
 	}
 }
@@ -83,6 +87,26 @@ void Server::startListen()
 		std::cout << "------ Received Request from client ------\n\n";
 		std::cout << buffer << std::endl;
 
+		std::stringstream ss(buffer);
+		std::string word;
+		ss >> word;
+		ss >> word;
+		word.erase(0, 1);
+		std::fstream fs;
+		if (word.length() == 0)
+			_serverMessage = buildResponse("index.html");
+		else
+		{
+			fs.open(word.c_str());
+			if (fs)
+			{
+				_serverMessage = buildResponse(word);
+			}
+			else
+			{
+				_serverMessage = buildResponse("404error.html");
+			}
+		}
 		sendResponse();
 
 		close(_new_socket);
@@ -99,13 +123,19 @@ void Server::acceptConnection(int &new_socket)
 	}
 }
 
-std::string Server::buildResponse()
+std::string Server::buildResponse(std::string filename)
 {
 	std::ostringstream ss;
-	std::string htmlFile = "<!DOCTYPE html><html lang=\"en\"><body><h1> HOME </h1><p> Hello from your Server :) </p></body></html>";
+	std::string htmlFile/*  = "<!DOCTYPE html><html lang=\"en\"><body><h1> HOME </h1><p> Hello from your Server :) </p></body></html>" */;
+	std::fstream fs;
+	std::stringstream buffer;
 	
+	fs.open(filename.c_str());
+	buffer << fs.rdbuf();
+	htmlFile = buffer.str();
 	ss << "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: " << htmlFile.size() << "\n\n"
 		<< htmlFile;
+	fs.close();
 
 	return ss.str();
 }

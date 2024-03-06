@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/05 09:26:53 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/06 14:58:23 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,11 +15,13 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <netdb.h>
 
 #define BUFFER_SIZE 30720
 
@@ -37,7 +39,7 @@ class Server
 		int startServer();
 		void closeServer();
 		void acceptConnection(int &new_socket);
-		std::string buildResponse();
+		std::string buildResponse(std::string filename);
 		void sendResponse();
 	
 	public:

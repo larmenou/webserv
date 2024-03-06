@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:29:40 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/05 09:24:56 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/06 14:11:43 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,6 @@ int main ()
 {
 	Server server = Server("127.0.0.1", 8080);
 	server.startListen();
-	
+
 	return (0);
 }
