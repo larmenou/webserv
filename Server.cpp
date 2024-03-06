@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/06 15:04:13 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/06 17:15:22 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,8 +133,16 @@ std::string Server::buildResponse(std::string filename)
 	fs.open(filename.c_str());
 	buffer << fs.rdbuf();
 	htmlFile = buffer.str();
-	ss << "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: " << htmlFile.size() << "\n\n"
-		<< htmlFile;
+	if (filename == "404error.html")
+	{
+		ss << "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: " << htmlFile.size() << "\n\n"
+			<< htmlFile;
+	}
+	else
+	{
+		ss << "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: " << htmlFile.size() << "\n\n"
+			<< htmlFile;
+	}
 	fs.close();
 
 	return ss.str();
