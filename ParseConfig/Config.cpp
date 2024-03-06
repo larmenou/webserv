@@ -96,15 +96,22 @@ void    Config::parseServer(size_t left, size_t right)
     std::vector<std::string>    directives;
     std::vector<std::string>    parameters;
     std::string                 serverSubstr;
+    ServerConf                  conf;
 
-    serverSubstr = _file.substr(left + 1, right - left - 1);
+    serverSubstr = _file.substr(left + 1, right - left - 2);
     split(serverSubstr, directives, ';');
     for (size_t i = 0; i < directives.size(); i++)
     {
         extractParameters(directives[i], parameters);
+        updateFromDirParams(parameters, conf);
         parameters.clear();
     }
-    
+}
+
+void    Config::updateFromDirParams(std::vector<std::string> &dirs, ServerConf &conf)
+{
+    (void) conf; (void) dirs;
+    /*TODO*/
 }
 
 int main()

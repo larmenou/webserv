@@ -30,6 +30,7 @@ class   Config
         void    initConfig(std::string &config_path);
         void    parse();
         void    parseServer(size_t left, size_t right);
+        void    updateFromDirParams(std::vector<std::string> &dirs, ServerConf &conf);
 };
 
 #endif
