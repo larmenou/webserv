@@ -4,25 +4,30 @@
 #include <iostream>
 #include <vector>
 
-# define GET        0b1
-# define POST       0b10
-# define PUT        0b100
-# define OPTIONS    0b1000
-# define HEAD       0b10000
-# define CONNECT    0b100000
-# define DELETE     0b1000000
-# define PATCH      0b10000000
-# define TRACE      0b100000000
+#include "Route.hpp"
+
+typedef struct s_route
+{
+        std::string     _route;
+        long            _methodPerms;
+        std::string     _root;
+        std::pair<std::string, std::string>     _rewrite;
+        bool            _dirListing;
+        std::string     _isDirFile;
+        std::string     _cgiFileExtension;
+        bool            _acceptUploads;
+        std::string     _fileSavePath;
+} t_route;
 
 class ServerConf
 {
     private :
         bool                        _listDir;
         std::vector<std::string>    _servernames;
+        std::vector<Route>          _routes;
         std::string                 _ip;
         unsigned int                _port;
         size_t                      _body_size_limit;
-        long                         _methodPerms;
 
     public :
         ServerConf();
@@ -37,9 +42,9 @@ class ServerConf
         unsigned int                    getPort() const;
         const std::vector<std::string>  getNames();
     
-        void        setIP(std::string ip);
+        void        setIP(std::string &ip);
+        void        setRoutes(std::vector<Route> &routes);
         void        setPort(unsigned int port);
-        void        setPerms(long perms);
         void        setBodySizeLimit(size_t size);
         void        addServerName(std::string &name);
   

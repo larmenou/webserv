@@ -1,6 +1,6 @@
 CC		= c++
-FLAGS	= -Wall -Wextra -Werror -std=c++98 -MMD
-SRC		= Config.cpp ServerConf.cpp
+FLAGS	= -Wall -Wextra -Werror -std=c++98 -MMD -g
+SRC		= Config.cpp ServerConf.cpp Route.cpp
 OBJ		= $(SRC:%.cpp=$(OBJ_DIR)/%.o)
 OBJ_DIR = ./obj
 NAME	= test

@@ -90,6 +90,53 @@ static void extractParameters(std::string &config, std::vector<std::string> &par
         parameters.push_back(word);
 }
 
+Route   Config::parseLocation(std::string &substr, size_t left, size_t right)
+{
+    std::vector<std::string>    directives;
+    std::vector<std::string>    parameters;
+    std::string                 locationSubstr;
+    t_route                     route;
+
+    locationSubstr = substr.substr(left + 1, right - left - 2);
+    split(locationSubstr, directives, ';');
+    for (size_t i = 0; i < directives.size(); i++)
+    {
+        extractParameters(directives[i], parameters);
+        parameters.clear();
+    }
+    Route ret(route._methodPerms,
+                route._root,
+                route._rewrite,
+                route._dirListing,
+                route._isDirFile,
+                route._cgiFileExtension,
+                route._acceptUploads,
+                route._fileSavePath);
+    return ret;
+}
+
+void  Config::extractLocations(std::string &substr, ServerConf &conf)
+{
+    std::size_t         location_idx;
+    std::vector<Route>  locations;
+    size_t              left = 0, right;
+    std::string         route;
+
+    while (true)
+    {
+        location_idx = substr.find("location");
+        if (location_idx == std::string::npos)
+            break;
+        size_t route_idx = substr.find_first_not_of(SPACES, location_idx + 8);
+        size_t route_end = substr.find_first_of(SPACES, route_idx);
+        route = substr.substr(route_idx, route_end - route_idx);
+        determineBracketBounds(substr, route_end, left, right, '{', '}');
+        locations.push_back(parseLocation(substr, left, right));
+        substr.erase(location_idx, right - location_idx);
+    }
+    conf.setRoutes(locations);
+}
+
 
 void    Config::parseServer(size_t left, size_t right)
 {
@@ -99,6 +146,7 @@ void    Config::parseServer(size_t left, size_t right)
     ServerConf                  conf;
 
     serverSubstr = _file.substr(left + 1, right - left - 2);
+    extractLocations(serverSubstr, conf);
     split(serverSubstr, directives, ';');
     for (size_t i = 0; i < directives.size(); i++)
     {
@@ -106,6 +154,7 @@ void    Config::parseServer(size_t left, size_t right)
         updateFromDirParams(parameters, conf);
         parameters.clear();
     }
+    _servers.push_back(conf);
 }
 
 void    Config::updateFromDirParams(std::vector<std::string> &dirs, ServerConf &conf)

@@ -8,8 +8,7 @@ ServerConf::ServerConf() : _listDir(true),
                         _servernames(),
                         _ip("0.0.0.0"),
                         _port(80),
-                        _body_size_limit(1000000),
-                        _methodPerms(GET | POST)
+                        _body_size_limit(1000000)
 {
 }
 
@@ -25,7 +24,13 @@ ServerConf  &ServerConf::operator=(ServerConf const &a)
     _ip = a._ip;
     _port = a._port;
     _body_size_limit = a._body_size_limit;
-    _methodPerms = a._methodPerms;
+    _routes = a._routes;
 
     return *this;
 }
+
+void    ServerConf::setIP(std::string &ip) { _ip = ip;}
+void    ServerConf::setRoutes(std::vector<Route> &routes) { _routes = routes; }
+void    ServerConf::setPort(unsigned int port) { _port = port; }
+void    ServerConf::setBodySizeLimit(size_t size) { _body_size_limit = size;}
+void    ServerConf::addServerName(std::string &name) { _servernames.push_back(name); }

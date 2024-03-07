@@ -7,6 +7,7 @@
 # include <sstream>
 
 # include "ServerConf.hpp"
+# include "Route.hpp"
 
 # define BUFFER_SIZE    10
 # define SPACES         " \n\t\f\r\v"
@@ -20,6 +21,12 @@ class   Config
         std::string             _file;
         bool                    _isInit;
 
+        void                parse();
+        void                parseServer(size_t left, size_t right);
+        void                updateFromDirParams(std::vector<std::string> &dirs, ServerConf &conf);
+        void                extractLocations(std::string &substr, ServerConf &conf);
+        Route               parseLocation(std::string &substr, size_t left, size_t right);
+
     public :
         Config();
         Config(Config const &a);
@@ -28,9 +35,6 @@ class   Config
         Config  &operator=(Config const &a);
 
         void    initConfig(std::string &config_path);
-        void    parse();
-        void    parseServer(size_t left, size_t right);
-        void    updateFromDirParams(std::vector<std::string> &dirs, ServerConf &conf);
 };
 
 #endif
