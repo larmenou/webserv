@@ -2,10 +2,28 @@
 
 Config::Config()
 {
-    _directiveFuncs["listen"] = &Config::listen;
-    _directiveFuncs["server_name"] = &Config::server_name;
-    _directiveFuncs["error_page"] = &Config::error_page;
-    _directiveFuncs["client_max_body_size"] = &Config::client_max_body_size;
+    serverUpdateFuncs["listen"] = &Config::listen;
+    serverUpdateFuncs["server_name"] = &Config::server_name;
+    serverUpdateFuncs["error_page"] = &Config::error_page;
+    serverUpdateFuncs["client_max_body_size"] = &Config::client_max_body_size;
+
+    routeUpdateFuncs["root"] = &Config::root;
+    routeUpdateFuncs["rewrite"] = &Config::rewrite;
+    routeUpdateFuncs["allowed_methods"] = &Config::allowed_methods;
+    routeUpdateFuncs["autoindex"] = &Config::autoindex;
+    routeUpdateFuncs["dir_default"] = &Config::dir_default;
+    routeUpdateFuncs["cgi_extension"] = &Config::cgi_extension;
+
+    str2permmap["GET"] = GET;
+    str2permmap["POST"] = POST;
+    str2permmap["PUT"] = PUT;
+    str2permmap["OPTIONS"] = OPTIONS;
+    str2permmap["HEAD"] = HEAD;
+    str2permmap["CONNECT"] = CONNECT;
+    str2permmap["DELETE"] = DELETE;
+    str2permmap["PATCH"] = PATCH;
+    str2permmap["TRACE"] = TRACE;
+
 }
 
 Config::~Config()
@@ -93,29 +111,34 @@ static void extractParameters(std::string &config, std::vector<std::string> &par
         parameters.push_back(word);
 }
 
-Route   Config::parseLocation(std::string &substr, size_t left, size_t right)
+ void   Config::updateRouteFromDirective(std::vector<std::string> &params, Route &route)
+ {
+    std::map<std::string, bool (Config::*)(std::vector<std::string>&, Route&)>::iterator ite;
+
+    if (params.size() == 0)
+        return ;
+    ite = routeUpdateFuncs.find(params[0]);
+    if (ite == routeUpdateFuncs.end())
+        throw std::runtime_error("Unknown location directive.");
+    if (((this)->*(ite->second))(params, route) == false)
+        throw std::runtime_error("Invalid arguments for location directive.");
+ }
+
+
+void    Config::parseLocation(std::string &substr, size_t left, size_t right, Route &route)
 {
     std::vector<std::string>    directives;
     std::vector<std::string>    parameters;
     std::string                 locationSubstr;
-    t_route                     route;
-
+    
     locationSubstr = substr.substr(left + 1, right - left - 2);
     split(locationSubstr, directives, ';');
     for (size_t i = 0; i < directives.size(); i++)
     {
         extractParameters(directives[i], parameters);
+        updateRouteFromDirective(parameters, route);
         parameters.clear();
     }
-    Route ret(route._methodPerms,
-                route._root,
-                route._rewrite,
-                route._dirListing,
-                route._isDirFile,
-                route._cgiFileExtension,
-                route._acceptUploads,
-                route._fileSavePath);
-    return ret;
 }
 
 void  Config::extractLocations(std::string &substr, ServerConf &conf)
@@ -123,7 +146,9 @@ void  Config::extractLocations(std::string &substr, ServerConf &conf)
     std::size_t         location_idx;
     std::vector<Route>  locations;
     size_t              left = 0, right;
-    std::string         route;
+    std::string         route_str;
+    Route               route;
+
 
     while (true)
     {
@@ -132,9 +157,10 @@ void  Config::extractLocations(std::string &substr, ServerConf &conf)
             break;
         size_t route_idx = substr.find_first_not_of(SPACES, location_idx + 8);
         size_t route_end = substr.find_first_of(SPACES, route_idx);
-        route = substr.substr(route_idx, route_end - route_idx);
+        route_str = substr.substr(route_idx, route_end - route_idx);
         determineBracketBounds(substr, route_end, left, right, '{', '}');
-        locations.push_back(parseLocation(substr, left, right));
+        parseLocation(substr, left, right, route);
+        locations.push_back(route);
         substr.erase(location_idx, right - location_idx);
     }
     conf.setRoutes(locations);
@@ -154,20 +180,20 @@ void    Config::parseServer(size_t left, size_t right)
     for (size_t i = 0; i < directives.size(); i++)
     {
         extractParameters(directives[i], parameters);
-        updateFromDirParams(parameters, conf);
+        updateServerFromDirective(parameters, conf);
         parameters.clear();
     }
     _servers.push_back(conf);
 }
 
-void    Config::updateFromDirParams(std::vector<std::string> &params, ServerConf &conf)
+void    Config::updateServerFromDirective(std::vector<std::string> &params, ServerConf &conf)
 {
     std::map<std::string, bool (Config::*)(std::vector<std::string>&, ServerConf&)>::iterator ite;
 
     if (params.size() == 0)
         return ;
-    ite = _directiveFuncs.find(params[0]);
-    if (ite == _directiveFuncs.end())
+    ite = serverUpdateFuncs.find(params[0]);
+    if (ite == serverUpdateFuncs.end())
         throw std::runtime_error("Unknown directive.");
     if (((this)->*(ite->second))(params, conf) == false)
         throw std::runtime_error("Invalid arguments for directive.");
@@ -242,18 +268,76 @@ bool    Config::client_max_body_size(std::vector<std::string> &dirs, ServerConf 
     return false;
 }
 
-
-int main()
+bool    Config::root(std::vector<std::string> &dirs, Route &conf)
 {
-    Config conf;
-    std::string filepath("tests/server.conf");
-    try
+    if (dirs.size() != 2)
+        return false;
+    conf.setRoot(dirs[1]);
+    return true;
+}
+bool    Config::rewrite(std::vector<std::string> &dirs, Route &conf)
+{
+    if (dirs.size() != 4)
+        return false;
+    if (dirs[3] == "permanent")
+        conf.setRedirection(dirs[1], dirs[2], 301);
+    else if (dirs[3] == "redirect")
+        conf.setRedirection(dirs[1], dirs[2], 302);
+    else
+        return false;
+    return true;
+}
+
+static void rejoin(std::vector<std::string> &dirs, std::string &out)
+{
+    for (size_t i = 1; i < dirs.size(); i++)
+        out += dirs[i];
+}
+
+bool    Config::allowed_methods(std::vector<std::string> &dirs, Route &conf)
+{
+    std::string out;
+    std::vector<std::string> methods;
+    std::map<std::string, long>::iterator ite;
+    long    perms;
+
+    if (dirs.size() <= 1)
+        return false;
+    rejoin(dirs, out);
+    split(out, methods, ',');
+    for (size_t i = 0; i < methods.size(); i++)
     {
-        conf.initConfig(filepath);
+        ite = str2permmap.find(methods[i]);
+        if (ite == str2permmap.end())
+            return false;
+        perms |= ite->second;
     }
-    catch(const std::exception& e)
-    {
-        std::cerr << "Error :" << e.what() << '\n';
-    }
-    
+    conf.setMethodPerms(perms);
+    return true;
+}
+bool    Config::autoindex(std::vector<std::string> &dirs, Route &conf)
+{
+    if (dirs.size() != 2)
+        return false;
+    if (dirs[1] == "on")
+        conf.setListDirectory(true);
+    else if (dirs[1] == "off")
+        conf.setListDirectory(false);
+    else
+        return false;
+    return true;
+}
+bool    Config::dir_default(std::vector<std::string> &dirs, Route &conf)
+{
+    if (dirs.size() != 2)
+        return false;
+    conf.setDirFile(dirs[1]);
+    return true;
+}
+bool    Config::cgi_extension(std::vector<std::string> &dirs, Route &conf)
+{
+    if (dirs.size() != 2)
+        return false;
+    conf.setDirFile(dirs[1]);
+    return true;
 }

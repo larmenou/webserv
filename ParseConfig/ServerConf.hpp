@@ -28,7 +28,7 @@ class ServerConf
         std::vector<Route>          _routes;
         std::map<unsigned int, std::string> _error_pages;
         std::string                 _ip;
-        unsigned int                _port;
+        int                         _port;
         size_t                      _body_size_limit;
 
     public :
@@ -46,7 +46,7 @@ class ServerConf
     
         void        setIP(std::string &ip);
         void        setRoutes(std::vector<Route> &routes);
-        void        setPort(unsigned int port);
+        void        setPort(int port);
         void        setBodySizeLimit(size_t size);
         void        addServerName(std::string &name);
         void        addErrorPage(unsigned int code, std::string &path);

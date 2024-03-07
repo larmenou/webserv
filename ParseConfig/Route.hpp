@@ -21,26 +21,39 @@ class Route
         long            _methodPerms;
         std::string     _root;
         std::pair<std::string, std::string>     _rewrite;
+        long                                    _redir_code;
         bool            _dirListing;
         std::string     _isDirFile;
         std::string     _cgiFileExtension;
 
         bool            _acceptUploads;
         std::string     _fileSavePath;
-        Route();
-
+    
     public :
-        Route(long _methodPerms,
-                std::string &root,
-                std::pair<std::string, std::string> &rewrite,
-                bool dirListing,
-                std::string &dirFile,
-                std::string &cgiFileExtension,
-                bool acceptUploads,
-                std::string &fileSavePath);
+        Route();
         Route(Route const &a);
         ~Route();
         Route &operator=(Route const &a);
+
+        const std::string   &getRoute();
+        const std::string   &getRoot();
+        const std::string   &getDirFile();
+        const std::string   &getCgiExtension();
+        const std::string   &getSavePath();
+        const std::pair<std::string, std::string> &getRewrite();
+        long    getMethodPerms();
+        bool    isAcceptingUploads();
+        bool    isListingDirs();
+
+        void    setRoute(std::string &route);
+        void    setRoot(std::string &root);
+        void    setDirFile(std::string &dirFile);
+        void    setCgiExtension(std::string &getCgiExtension);
+        void    setSavePath(std::string &savePath);
+        void    setRedirection(std::string &from, std::string &to, long code);
+        void    setMethodPerms(long perms);
+        void    setUpload(bool acceptsUploads);
+        void    setListDirectory(bool listDir);
 };
 
 #endif

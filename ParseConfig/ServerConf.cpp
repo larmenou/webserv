@@ -7,7 +7,7 @@ ServerConf::~ServerConf()
 ServerConf::ServerConf() : _listDir(true),
                         _servernames(),
                         _ip("0.0.0.0"),
-                        _port(80),
+                        _port(-1),
                         _body_size_limit(1000000)
 {
 }
@@ -31,7 +31,10 @@ ServerConf  &ServerConf::operator=(ServerConf const &a)
 
 void    ServerConf::setIP(std::string &ip) { _ip = ip;}
 void    ServerConf::setRoutes(std::vector<Route> &routes) { _routes = routes; }
-void    ServerConf::setPort(unsigned int port) { _port = port; }
+void    ServerConf::setPort(int port) {
+    if (port == -1)
+        _port = port;
+}
 void    ServerConf::setBodySizeLimit(size_t size) { _body_size_limit = size;}
 void    ServerConf::addServerName(std::string &name) { _servernames.push_back(name); }
 void    ServerConf::addErrorPage(unsigned int code, std::string &path) { _error_pages[code] = path; }
