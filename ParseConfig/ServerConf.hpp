@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 
 #include "Route.hpp"
 
@@ -25,6 +26,7 @@ class ServerConf
         bool                        _listDir;
         std::vector<std::string>    _servernames;
         std::vector<Route>          _routes;
+        std::map<unsigned int, std::string> _error_pages;
         std::string                 _ip;
         unsigned int                _port;
         size_t                      _body_size_limit;
@@ -47,6 +49,7 @@ class ServerConf
         void        setPort(unsigned int port);
         void        setBodySizeLimit(size_t size);
         void        addServerName(std::string &name);
+        void        addErrorPage(unsigned int code, std::string &path);
   
 };
 

@@ -2,7 +2,10 @@
 
 Config::Config()
 {
-
+    _directiveFuncs["listen"] = &Config::listen;
+    _directiveFuncs["server_name"] = &Config::server_name;
+    _directiveFuncs["error_page"] = &Config::error_page;
+    _directiveFuncs["client_max_body_size"] = &Config::client_max_body_size;
 }
 
 Config::~Config()
@@ -157,15 +160,100 @@ void    Config::parseServer(size_t left, size_t right)
     _servers.push_back(conf);
 }
 
-void    Config::updateFromDirParams(std::vector<std::string> &dirs, ServerConf &conf)
+void    Config::updateFromDirParams(std::vector<std::string> &params, ServerConf &conf)
 {
-    (void) conf; (void) dirs;
-    /*TODO*/
+    std::map<std::string, bool (Config::*)(std::vector<std::string>&, ServerConf&)>::iterator ite;
+
+    if (params.size() == 0)
+        return ;
+    ite = _directiveFuncs.find(params[0]);
+    if (ite == _directiveFuncs.end())
+        throw std::runtime_error("Unknown directive.");
+    if (((this)->*(ite->second))(params, conf) == false)
+        throw std::runtime_error("Invalid arguments for directive.");
 }
+
+bool    Config::server_name(std::vector<std::string> &dirs, ServerConf &conf)
+{
+    if (dirs.size() == 1)
+        return false;
+    for (size_t i = 1; i < dirs.size(); i++)
+        conf.addServerName(dirs[i]);
+    return true;
+}
+
+
+bool    Config::listen(std::vector<std::string> &dirs, ServerConf &conf)
+{
+    std::vector<std::string>    out;
+    long                        port;
+    char                        *endptr;
+
+    if (dirs.size() != 2)
+        return false;
+    if (dirs[1].find(':') != std::string::npos)
+    {
+        split(dirs[1], out, ':');
+        if (out.size() != 2)
+            return false;
+        if (inet_addr(out[0].c_str()) == (in_addr_t)(-1))
+            return false;
+        port = std::strtol(out[1].c_str(), &endptr, 10);
+        if (*endptr != 0 || port < 1 || port > 65535)
+            return false;
+        conf.setIP(out[0]);
+        conf.setPort(port);
+    }
+    else
+    {
+        port = std::strtol(dirs[1].c_str(), &endptr, 10);
+        if (*endptr != 0 || port < 1 || port > 65535)
+            return false;
+        conf.setPort(port);
+    }
+    return true;
+}
+
+bool    Config::error_page(std::vector<std::string> &dirs, ServerConf &conf)
+{
+    long    code;
+    char    *endptr;
+
+    if (dirs.size() != 3)
+        return false;
+    code = std::strtol(dirs[1].c_str(), &endptr, 10);
+    if (*endptr != 0 || code < 400 || code > 527)
+        return false;
+    conf.addErrorPage(static_cast<unsigned int>(code), dirs[2]);
+    return true;
+}
+
+bool    Config::client_max_body_size(std::vector<std::string> &dirs, ServerConf &conf)
+{
+    unsigned long   size;
+    char    *endptr;
+
+    if (dirs.size() != 2)
+        return false;
+    size = std::strtoul(dirs[1].c_str(), &endptr, 10);
+    if (*endptr != 0)
+        return false;
+    conf.setBodySizeLimit(size);
+    return false;
+}
+
 
 int main()
 {
     Config conf;
     std::string filepath("tests/server.conf");
-    conf.initConfig(filepath);
+    try
+    {
+        conf.initConfig(filepath);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Error :" << e.what() << '\n';
+    }
+    
 }
