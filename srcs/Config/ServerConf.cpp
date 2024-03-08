@@ -60,8 +60,8 @@ const Route &ServerConf::findRouteFromURN(std::string &urn) const
     for (size_t i = 0; i < _routes.size(); i++)
     {
         const std::string &route = _routes[i].getRoute();
-        std::cout << urn.substr(0, route.length()) << std::endl;
-        if (route.compare(urn.substr(0, route.length())) == 0)
+        size_t end = urn.find_first_of("/?#", 1);
+        if (route.compare(urn.substr(0, end)) == 0)
             return _routes[i];
     }
     throw std::runtime_error("No route from URN");
