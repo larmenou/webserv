@@ -28,8 +28,8 @@ all: 		$(NAME)
 $(NAME):	$(OBJ)
 				$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 
-$(PARSER_TEST): $(OBJ)
-				$(CXX) $(CXXFLAGS) $(filter-out main.o,$(OBJ)) srcs/Config/test.cpp -o $@
+$(PARSER_TEST): $(OBJ) srcs/Config/test.o
+				$(CXX) $(CXXFLAGS) $(filter-out main.o,$(OBJ)) srcs/Config/test.o -o $@
 
 clean:
 				@rm -f $(OBJ)

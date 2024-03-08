@@ -33,7 +33,39 @@ ServerConf  &ServerConf::operator=(ServerConf const &a)
 size_t                          ServerConf::getBodySizeLimit() const { return _body_size_limit; }
 const std::string               &ServerConf::getIP() const { return _ip; }
 int                             ServerConf::getPort() const { return _port; }
-const std::vector<std::string>  ServerConf::getNames() const { return _servernames; }
+const std::vector<std::string>  &ServerConf::getNames() const { return _servernames; }
+
+const std::string               ServerConf::getErrorPage(unsigned int code) const
+{
+    std::map<unsigned int, std::string>::const_iterator   ite;
+
+    ite = _error_pages.find(code);
+    if (_error_pages.find(code) == _error_pages.end())
+        throw std::runtime_error("Could not find error page.");
+    return ite->second;
+}
+
+
+bool    ServerConf::hasServername(std::string &name) const
+{
+    if (std::find(_servernames.begin(), _servernames.end(), name) != _servernames.end())
+        return true;
+    return false;
+}
+
+const Route &ServerConf::findRouteFromURN(std::string &urn) const
+{
+    if (_routes.size() == 0)
+        throw std::runtime_error("No route");
+    for (size_t i = 0; i < _routes.size(); i++)
+    {
+        const std::string &route = _routes[i].getRoute();
+        size_t end = urn.find_first_of("/?#", 1);
+        if (route.compare(urn.substr(0, end)) == 0)
+            return _routes[i];
+    }
+    throw std::runtime_error("No route from URN");
+}
 
 
 void    ServerConf::setIP(std::string &ip) { _ip = ip;}
