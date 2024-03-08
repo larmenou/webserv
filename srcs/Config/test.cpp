@@ -9,12 +9,14 @@ int main(int ac, char **av)
         std::string path(av[1]);
         std::string host("");
         std::string ip("127.0.0.1");
+        std::string urn("/redirect?test=aaaa");
         conf.initConfig(path);
         const ServerConf &server = conf.getServerFromHostAndIP(host, ip);
 
-        std::cout << "Found " << server.getIP()  << ":" << server.getPort() << std::endl;
+        std::cout << "Found server " << server.getIP()  << ":" << server.getPort() << std::endl;
         std::cout << "404 error page at '" << server.getErrorPage(404) << "'" << std::endl;
-        server.getErrorPage(500);
+        const Route &route = server.findRouteFromURN(urn);
+        std::cout << "Found route " << route.getRoute() << std::endl;
     } catch (std::exception &e)
     {
         std::cerr << "Error : " << e.what() << std::endl;

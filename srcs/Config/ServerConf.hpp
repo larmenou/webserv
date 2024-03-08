@@ -32,6 +32,7 @@ class ServerConf
         const std::string               getErrorPage(unsigned int code) const;
 
         bool        hasServername(std::string &name) const;
+        const Route &findRouteFromURN(std::string &urn) const;
 
         void        setIP(std::string &ip);
         void        setRoutes(std::vector<Route> &routes);

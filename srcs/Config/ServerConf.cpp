@@ -53,6 +53,21 @@ bool    ServerConf::hasServername(std::string &name) const
     return false;
 }
 
+const Route &ServerConf::findRouteFromURN(std::string &urn) const
+{
+    if (_routes.size() == 0)
+        throw std::runtime_error("No route");
+    for (size_t i = 0; i < _routes.size(); i++)
+    {
+        const std::string &route = _routes[i].getRoute();
+        std::cout << urn.substr(0, route.length()) << std::endl;
+        if (route.compare(urn.substr(0, route.length())) == 0)
+            return _routes[i];
+    }
+    throw std::runtime_error("No route from URN");
+}
+
+
 void    ServerConf::setIP(std::string &ip) { _ip = ip;}
 void    ServerConf::setRoutes(std::vector<Route> &routes) { _routes = routes; }
 void    ServerConf::setPort(int port) {
