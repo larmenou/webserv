@@ -35,6 +35,17 @@ const std::string               &ServerConf::getIP() const { return _ip; }
 int                             ServerConf::getPort() const { return _port; }
 const std::vector<std::string>  &ServerConf::getNames() const { return _servernames; }
 
+const std::string               ServerConf::getErrorPage(unsigned int code) const
+{
+    std::map<unsigned int, std::string>::const_iterator   ite;
+
+    ite = _error_pages.find(code);
+    if (_error_pages.find(code) == _error_pages.end())
+        throw std::runtime_error("Could not find error page.");
+    return ite->second;
+}
+
+
 bool    ServerConf::hasServername(std::string &name) const
 {
     if (std::find(_servernames.begin(), _servernames.end(), name) != _servernames.end())

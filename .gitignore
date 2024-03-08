@@ -2,3 +2,5 @@
 *.d
 obj
 .vscode
+peda-session*
+.gdb_history

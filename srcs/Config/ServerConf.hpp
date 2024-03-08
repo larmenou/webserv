@@ -29,6 +29,7 @@ class ServerConf
         const std::string               &getIP() const;
         int                             getPort() const;
         const std::vector<std::string>  &getNames() const;
+        const std::string               getErrorPage(unsigned int code) const;
 
         bool        hasServername(std::string &name) const;
 
