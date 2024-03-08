@@ -160,7 +160,11 @@ void  Config::extractLocations(std::string &substr, ServerConf &conf)
         route_str = substr.substr(route_idx, route_end - route_idx);
         determineBracketBounds(substr, route_end, left, right, '{', '}');
         parseLocation(substr, left, right, route);
+        route.setRoute(route_str);
+        if (DEBUG)
+            std::cout << "[LOG] Adding " << route << std::endl;
         locations.push_back(route);
+        route = Route();
         substr.erase(location_idx, right - location_idx);
     }
     conf.setRoutes(locations);
@@ -183,6 +187,8 @@ void    Config::parseServer(size_t left, size_t right)
         updateServerFromDirective(parameters, conf);
         parameters.clear();
     }
+    if (DEBUG)
+        std::cout << "[LOG] To " << conf << std::endl;
     _servers.push_back(conf);
 }
 

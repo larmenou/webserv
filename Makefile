@@ -5,7 +5,13 @@ OBJFLAGS 	:=	-c
 NAME		:=	webserv
 
 SRCS_F		:= 	main \
-				Server
+				Server \
+
+SRCS_F		+= $(addprefix ./Config/, \
+					Config \
+					Route \
+					ServerConf \
+					)
 
 SRCS		:=	$(addsuffix .cpp, $(SRCS_F))
 OBJ			:=	$(addsuffix .o, $(SRCS_F))
@@ -19,6 +25,9 @@ all: 		$(NAME)
 
 $(NAME):	$(OBJ)
 				$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
+
+parser-test: $(OBJ)
+				$(CXX) $(CXXFLAGS) $(filter-out main.o,$(OBJ)) Config/test.cpp -o $@
 
 clean:
 				@rm -f $(OBJ)

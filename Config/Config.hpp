@@ -12,8 +12,15 @@
 # include "ServerConf.hpp"
 # include "Route.hpp"
 
+#ifndef BUFFER_SIZE
 # define BUFFER_SIZE    10
+#endif
+#ifndef SPACES
 # define SPACES         " \n\t\f\r\v"
+#endif
+#ifndef DEBUG
+# define DEBUG  true
+#endif
 
 void    split(std::string &in, std::vector<std::string> &out, char sep);
 

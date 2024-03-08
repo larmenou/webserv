@@ -37,12 +37,10 @@ class ServerConf
         ~ServerConf();
         ServerConf  &operator=(ServerConf const &a);
 
-
-        long                            getPerms() const;
         size_t                          getBodySizeLimit() const;
         const std::string               &getIP() const;
-        unsigned int                    getPort() const;
-        const std::vector<std::string>  getNames();
+        int                             getPort() const;
+        const std::vector<std::string>  getNames() const;
     
         void        setIP(std::string &ip);
         void        setRoutes(std::vector<Route> &routes);
@@ -50,7 +48,8 @@ class ServerConf
         void        setBodySizeLimit(size_t size);
         void        addServerName(std::string &name);
         void        addErrorPage(unsigned int code, std::string &path);
-  
 };
+
+std::ostream    &operator<<(std::ostream &os, ServerConf &conf);
 
 #endif

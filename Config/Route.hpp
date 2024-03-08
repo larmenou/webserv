@@ -35,15 +35,16 @@ class Route
         ~Route();
         Route &operator=(Route const &a);
 
-        const std::string   &getRoute();
-        const std::string   &getRoot();
-        const std::string   &getDirFile();
-        const std::string   &getCgiExtension();
-        const std::string   &getSavePath();
-        const std::pair<std::string, std::string> &getRewrite();
-        long    getMethodPerms();
-        bool    isAcceptingUploads();
-        bool    isListingDirs();
+        const std::string   &getRoute() const;
+        const std::string   &getRoot() const;
+        const std::string   &getDirFile() const;
+        const std::string   &getCgiExtension() const;
+        const std::string   &getSavePath() const;
+        const std::pair<std::string, std::string> &getRewrite() const;
+        long    getRedirCode() const;
+        long    getMethodPerms() const;
+        bool    isAcceptingUploads() const;
+        bool    isListingDirs() const;
 
         void    setRoute(std::string &route);
         void    setRoot(std::string &root);
@@ -55,5 +56,7 @@ class Route
         void    setUpload(bool acceptsUploads);
         void    setListDirectory(bool listDir);
 };
+
+std::ostream    &operator<<(std::ostream &os, const Route &route);
 
 #endif
