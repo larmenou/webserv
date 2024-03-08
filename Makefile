@@ -1,13 +1,16 @@
 CXX			:=	c++
 CXXFLAGS	:=	-g -Wall -Wextra -Werror -std=c++98
 OBJFLAGS 	:=	-c
+SRCS_DIR	:= ./srcs
 
 NAME		:=	webserv
 
 SRCS_F		:= 	main \
 				Server \
 
-SRCS_F		+= $(addprefix ./Config/, \
+SRCS_F		+= 
+
+SRCS_F		+= $(addprefix $(SRCS_DIR)/Config/, \
 					Config \
 					Route \
 					ServerConf \
@@ -27,7 +30,7 @@ $(NAME):	$(OBJ)
 				$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 
 parser-test: $(OBJ)
-				$(CXX) $(CXXFLAGS) $(filter-out main.o,$(OBJ)) Config/test.cpp -o $@
+				$(CXX) $(CXXFLAGS) $(filter-out main.o,$(OBJ)) srcs/Config/test.cpp -o $@
 
 clean:
 				@rm -f $(OBJ)
