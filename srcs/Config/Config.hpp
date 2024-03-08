@@ -61,6 +61,7 @@ class   Config
         Config  &operator=(Config const &a);
 
         void    initConfig(std::string &config_path);
+        const ServerConf    &getServerFromHostAndIP(std::string &host, std::string &ip);
 };
 
 #endif

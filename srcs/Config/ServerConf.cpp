@@ -33,8 +33,14 @@ ServerConf  &ServerConf::operator=(ServerConf const &a)
 size_t                          ServerConf::getBodySizeLimit() const { return _body_size_limit; }
 const std::string               &ServerConf::getIP() const { return _ip; }
 int                             ServerConf::getPort() const { return _port; }
-const std::vector<std::string>  ServerConf::getNames() const { return _servernames; }
+const std::vector<std::string>  &ServerConf::getNames() const { return _servernames; }
 
+bool    ServerConf::hasServername(std::string &name) const
+{
+    if (std::find(_servernames.begin(), _servernames.end(), name) != _servernames.end())
+        return true;
+    return false;
+}
 
 void    ServerConf::setIP(std::string &ip) { _ip = ip;}
 void    ServerConf::setRoutes(std::vector<Route> &routes) { _routes = routes; }

@@ -347,3 +347,27 @@ bool    Config::cgi_extension(std::vector<std::string> &dirs, Route &conf)
     conf.setDirFile(dirs[1]);
     return true;
 }
+
+const ServerConf    &Config::getServerFromHostAndIP(std::string &host, std::string &ip)
+{
+    bool        foundIP;
+    size_t      server_idx;
+
+    foundIP = false;
+    for (size_t i = 0; i < _servers.size(); i++)
+    {
+        if (_servers[i].getIP() == ip || ip == "0.0.0.0")
+        {
+            if (foundIP == false)
+            {
+                foundIP = true;
+                server_idx = i;
+            }
+            if (_servers[i].hasServername(host))
+                return _servers[i];
+        }
+    }
+    if (foundIP == false)
+        throw std::exception();
+    return _servers[server_idx];
+}
