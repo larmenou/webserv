@@ -187,6 +187,8 @@ void    Config::parseServer(size_t left, size_t right)
         updateServerFromDirective(parameters, conf);
         parameters.clear();
     }
+    if (conf.getPort() == -1)
+        throw std::runtime_error("Listening port was not initialized");
     if (DEBUG)
         std::cout << "[LOG] To " << conf << std::endl;
     _servers.push_back(conf);
