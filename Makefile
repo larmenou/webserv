@@ -4,11 +4,10 @@ OBJFLAGS 	:=	-c
 SRCS_DIR	:= ./srcs
 
 NAME		:=	webserv
+PARSER_TEST	:= parser-test
 
 SRCS_F		:= 	main \
 				Server \
-
-SRCS_F		+= 
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Config/, \
 					Config \
@@ -29,7 +28,7 @@ all: 		$(NAME)
 $(NAME):	$(OBJ)
 				$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 
-parser-test: $(OBJ)
+$(PARSER_TEST): $(OBJ)
 				$(CXX) $(CXXFLAGS) $(filter-out main.o,$(OBJ)) srcs/Config/test.cpp -o $@
 
 clean:
@@ -37,6 +36,7 @@ clean:
 
 fclean:		clean
 				@rm -f $(NAME)
+				@rm -f $(PARSER_TEST)
 
 re:			fclean all
 
