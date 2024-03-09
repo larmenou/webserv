@@ -42,6 +42,6 @@ class ServerConf
         void        addErrorPage(unsigned int code, std::string &path);
 };
 
-std::ostream    &operator<<(std::ostream &os, ServerConf &conf);
+std::ostream    &operator<<(std::ostream &os, const ServerConf &conf);
 
 #endif

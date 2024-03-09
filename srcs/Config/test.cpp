@@ -17,6 +17,11 @@ int main(int ac, char **av)
         std::cout << "404 error page at '" << server.getErrorPage(404) << "'" << std::endl;
         const Route &route = server.findRouteFromURN(urn);
         std::cout << "Found route " << route.getRoute() << std::endl;
+        const std::vector<ServerConf>   &servers = conf.getServers();
+        for (size_t i = 0; i < servers.size(); i ++)
+        {
+            std::cout << servers[i] << std::endl;
+        }
     } catch (std::exception &e)
     {
         std::cerr << "Error : " << e.what() << std::endl;

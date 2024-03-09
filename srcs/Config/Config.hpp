@@ -62,6 +62,7 @@ class   Config
 
         void    initConfig(std::string &config_path);
         const ServerConf    &getServerFromHostAndIP(std::string &host, std::string &ip);
+        const std::vector<ServerConf>   &getServers();
 };
 
 #endif

@@ -373,3 +373,8 @@ const ServerConf    &Config::getServerFromHostAndIP(std::string &host, std::stri
         throw std::exception();
     return _servers[server_idx];
 }
+
+const std::vector<ServerConf>   &Config::getServers()
+{
+    return _servers;
+}
