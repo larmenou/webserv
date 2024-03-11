@@ -54,7 +54,7 @@ bool    Route::isListingDirs() const { return _dirListing; }
 void    Route::setRoute(std::string &route) { _route = route; }
 void    Route::setRoot(std::string &root) { _root = root; }
 void    Route::setDirFile(std::string &dirFile) {_isDirFile = dirFile; }
-void    Route::setCgiExtension(std::string &getCgiExtension) { getCgiExtension = getCgiExtension; }
+void    Route::setCgiExtension(std::string &getCgiExtension) { _cgiFileExtension = getCgiExtension; }
 void    Route::setSavePath(std::string &savePath) { _fileSavePath = savePath; }
 void    Route::setRedirection(std::string &from, std::string &to, long code)
 {

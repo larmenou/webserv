@@ -187,6 +187,8 @@ void    Config::parseServer(size_t left, size_t right)
         updateServerFromDirective(parameters, conf);
         parameters.clear();
     }
+    if (conf.getPort() == -1)
+        throw std::runtime_error("Listening port was not initialized");
     if (DEBUG)
         std::cout << "[LOG] To " << conf << std::endl;
     _servers.push_back(conf);
@@ -305,7 +307,7 @@ bool    Config::allowed_methods(std::vector<std::string> &dirs, Route &conf)
     std::string out;
     std::vector<std::string> methods;
     std::map<std::string, long>::iterator ite;
-    long    perms;
+    long    perms = 0;
 
     if (dirs.size() <= 1)
         return false;
@@ -370,4 +372,9 @@ const ServerConf    &Config::getServerFromHostAndIP(std::string &host, std::stri
     if (foundIP == false)
         throw std::exception();
     return _servers[server_idx];
+}
+
+const std::vector<ServerConf>   &Config::getServers()
+{
+    return _servers;
 }
