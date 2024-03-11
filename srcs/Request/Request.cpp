@@ -80,7 +80,7 @@ void    Request::parseFromRaw(std::string &raw)
             break;
         parseLineHeader(line);
     }
-    if (_method & POST)
+    if (ss.tellg() != -1 && _method & POST)
         _body = ss.str().substr(ss.tellg());
 }
 
