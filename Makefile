@@ -6,13 +6,16 @@ SRCS_DIR	:= ./srcs
 NAME		:=	webserv
 PARSER_TEST	:= parser-test
 
-SRCS_F		:= 	main \
-				Server \
+SRCS_F		:= 	main
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Config/, \
 					Config \
 					Route \
 					ServerConf \
+					)
+
+SRCS_F		+= $(addprefix $(SRCS_DIR)/Server/, \
+					Server \
 					)
 
 SRCS		:=	$(addsuffix .cpp, $(SRCS_F))
