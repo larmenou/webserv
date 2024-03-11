@@ -307,7 +307,7 @@ bool    Config::allowed_methods(std::vector<std::string> &dirs, Route &conf)
     std::string out;
     std::vector<std::string> methods;
     std::map<std::string, long>::iterator ite;
-    long    perms;
+    long    perms = 0;
 
     if (dirs.size() <= 1)
         return false;
