@@ -22,6 +22,8 @@ bool    getlineCRLF(std::stringstream &ss, std::string &str)
         {
             str += c;
             str += strbuff;
+            i = 0;
+            strbuff.clear();
         }
         if (strbuff == CRLF)
             break;
@@ -43,6 +45,8 @@ const std::string   Request::getHTTPVersion() const { return _http_ver; }
 const std::string   Request::getBody() const { return _body; }
 long                Request::getMethod() const { return _method; }
 const std::map<std::string, std::string>  &Request::getHeaders() const { return _headers; }
+const std::map<std::string, std::string>  &Request::getURLParams() const { return _getParams; }
+
 
 static void getURNFromSS(std::stringstream &ss,
                     long        &method,
@@ -69,11 +73,30 @@ void    Request::parseLineHeader(std::string &line)
     _headers[out[0]] = out[1];
 }
 
+void    Request::extractGETParams()
+{
+    size_t  s = _urn.find("?");
+    if (s == std::string::npos || s + 1 > _urn.size())
+        return ;
+    std::string params(_urn.substr(s + 1));
+    std::vector<std::string>    out;
+    split(params, out, '&');
+    for (size_t i = 0; i < out.size(); i++)
+    {
+        if (out[i].length() == 0)
+            continue;
+        size_t eq = out[i].find('=');
+        _getParams[out[i].substr(0, eq)] = eq != std::string::npos ? out[i].substr(eq + 1, out[i].size() - eq) : "";
+    }
+    _urn = _urn.substr(0, s);
+}
+
 void    Request::parseFromRaw(std::string &raw)
 {
     std::stringstream   ss(raw);
     std::string         line;
     getURNFromSS(ss, _method, _urn, _http_ver);
+    extractGETParams();
     while (getlineCRLF(ss, line))
     {
         if (line.length() == 0)
@@ -92,8 +115,11 @@ std::ostream    &operator<<(std::ostream &os, const Request &req)
     os << "URN:" << req.getURN() << std::endl;
     os << "HTTP Version:" << req.getHTTPVersion() << std::endl;
     os << "Headers:" << std::endl;
-    
     for (; ite != req.getHeaders().end(); ite++)
+        os << "\t" << ite->first << ":" << ite->second << std::endl;
+    os << "URLParams:" << std::endl;
+    ite = req.getURLParams().begin();
+    for (; ite != req.getURLParams().end(); ite++)
         os << "\t" << ite->first << ":" << ite->second << std::endl;
     os << "Body:" << req.getBody() << std::endl;
     return os;

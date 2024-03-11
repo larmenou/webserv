@@ -17,11 +17,14 @@ class Request
         long                                _method;
         std::string                         _body;
         std::map<std::string, std::string>  _headers;
+        std::map<std::string, std::string>  _getParams;
 
         Request();
 
         void    parseFromRaw(std::string &raw);
         void    parseLineHeader(std::string &line);
+        void    extractGETParams();
+
     public :
         Request(std::string &raw_req);
         ~Request();
@@ -31,6 +34,7 @@ class Request
         const std::string   getBody() const;
         long                getMethod() const;
         const std::map<std::string, std::string>  &getHeaders() const;
+        const std::map<std::string, std::string>  &getURLParams() const;
 };
 
 std::ostream    &operator<<(std::ostream &os, const Request &req);
