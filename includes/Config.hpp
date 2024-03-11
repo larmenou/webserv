@@ -27,7 +27,7 @@ void    split(std::string &in, std::vector<std::string> &out, char sep);
 class   Config
 {
     private :
-        std::map<std::string, long> str2permmap;
+        static std::map<std::string, long> str2permmap;
         std::vector<ServerConf> _servers;
         std::map<std::string, bool (Config::*)(std::vector<std::string>&, ServerConf&)>   serverUpdateFuncs;
         std::map<std::string, bool (Config::*)(std::vector<std::string>&, Route&)>   routeUpdateFuncs;
@@ -63,6 +63,7 @@ class   Config
         void    initConfig(std::string &config_path);
         const ServerConf    &getServerFromHostAndIP(std::string &host, std::string &ip);
         const std::vector<ServerConf>   &getServers();
+        static long         str2perm(std::string &method_str);
 };
 
 #endif
