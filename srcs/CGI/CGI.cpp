@@ -16,7 +16,7 @@ void    CGI::getQueryString()
         _query_string += ite->first;
         _query_string += '=';
         _query_string += ite->second;
-        if (ite++ != _request->getURLParams().end())
+        if (++ite != _request->getURLParams().end())
             _query_string += '&';
         ite--;
     }
@@ -71,16 +71,7 @@ void    CGI::prepare(Request const &req, Route &route)
     getQueryString();
     getContentLength();
     getRequestMethod();
-
-    ss << "export REDIRECT_STATUS=true \n";
-    ss << "export QUERY_STRING='" << _query_string << "' \n";
-    ss << "export PATH_INFO='" << _path_info << "' \n";
-    ss << "export SCRIPT_FILENAME=" << _path_info << " \n";
-    ss << "export REQUEST_METHOD='" << _request_method << "' \n";
-    ss << "export CONTENT_LENGTH='" << _content_length << "' \n";
-    ss << "export CONTENT_TYPE='" << _content_type << "' \n";
-    ss << "export GATEWAY_INTERFACE=CGI/1.1 \n";
-    ss << "php-cgi";
+    getContentType();
 }
 
 static char *concatcpy(std::string key, std::string value)
@@ -120,6 +111,13 @@ char    **CGI::buildEnvFromAttr()
     return ret;
 }
 
+static void deleteEnv(char **env, size_t len)
+{
+    for (size_t i = 0; i < len; i++)
+        delete env[i];
+    delete[] env;
+}
+
 std::string  CGI::forwardReq()
 {
     std::string result;
@@ -136,12 +134,27 @@ std::string  CGI::forwardReq()
         throw std::runtime_error("Could not fork");
     if (pid == 0)
     {
+        dup2(fds[1], STDOUT_FILENO);
+        dup2(fds[0], STDIN_FILENO);
+        close(fds[0]);
+        close(fds[1]);
         execve("/usr/bin/php-cgi", av, env);
+        deleteEnv(env, 9);
         exit(1);
     }
     else
     {
+        int s;
 
+        deleteEnv(env, 9);
+        if (_request_method == "POST")
+            write(fds[1], _request->getBody().c_str(), _request->getBody().length());
+        close(fds[1]);
+        wait(&s);
+        char    c;
+        while ((read(fds[0], &c, 1)) != 0)
+            result += c;
+        close(fds[0]);
     }
     return result;
 }

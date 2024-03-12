@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <unistd.h>
+#include <sys/wait.h>
 #include "Request.hpp"
 #include "Route.hpp"
 
