@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/11 13:44:41 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/12 09:00:52 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,6 @@
 #include <vector>
 #include <poll.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>

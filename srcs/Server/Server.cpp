@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/11 14:28:11 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/12 09:01:32 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@ Server::Server(std::string ip_address, int port) : _ip_address(ip_address), _por
 	//std::stringstream ss;
 	_socketAddress.sin_family = AF_INET;
 	_socketAddress.sin_port = htons(_port);
-	_socketAddress.sin_addr.s_addr = inet_addr(_ip_address.c_str());
+	_socketAddress.sin_addr.s_addr = INADDR_ANY;
 
 	/* ss << port;
 	std::string port_str = ss.str();
@@ -71,7 +71,7 @@ void Server::startListen()
 		exit(1);
 	}
 
-	std::cout << "\n*** Listening on ADDRESS: " << inet_ntoa(_socketAddress.sin_addr) << " PORT: " << ntohs(_socketAddress.sin_port) << " ***\n\n";
+	std::cout << "\n*** Listening on ADDRESS: " << _ip_address << " PORT: " << ntohs(_socketAddress.sin_port) << " ***\n\n";
 
 	_fds[0].fd = _socket_listen;
 	_fds[0].events = POLLIN;
@@ -127,7 +127,7 @@ void Server::acceptConnection(int &new_socket)
 	new_socket = accept(_socket_listen, (sockaddr *)&client_addr, &client_len);
 	if (new_socket < 0)
 	{
-		std::cout << "Server failed to accept incoming connection from ADDRESS: " << inet_ntoa(_socketAddress.sin_addr) << "; PORT: " << ntohs(_socketAddress.sin_port) << std::endl;
+		std::cout << "Server failed to accept incoming connection" << std::endl;
 		exit(1);
 	}
 }
