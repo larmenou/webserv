@@ -1,5 +1,7 @@
 #include "Config.hpp"
 
+std::map<std::string, long> Config::str2permmap;
+
 Config::Config()
 {
     serverUpdateFuncs["listen"] = &Config::listen;
@@ -23,7 +25,6 @@ Config::Config()
     str2permmap["DELETE"] = DELETE;
     str2permmap["PATCH"] = PATCH;
     str2permmap["TRACE"] = TRACE;
-
 }
 
 Config::~Config()
@@ -41,6 +42,16 @@ void    split(std::string &in, std::vector<std::string> &out, char sep)
         out.push_back(in.substr(start, end - start));
         start = end + 1;
     } while (end != std::string::npos);
+}
+
+long         Config::str2perm(std::string &method_str)
+{
+        std::map<std::string, long>::const_iterator ite;
+
+        ite = str2permmap.find(method_str);
+        if (ite == str2permmap.end())
+            return -1;
+        return ite->second;
 }
 
 static void readAllFile(std::ifstream &fs, std::string &out)
