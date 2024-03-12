@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/12 09:00:52 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/12 13:50:27 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,8 @@ class Server
 		struct pollfd 		_fds[MAX_EVENTS];
 		struct sockaddr_in	_socketAddress;
         unsigned int		_socketAddress_len;
-		std::string 		_serverMessage;
+		std::string 		_header_response;
+		std::string 		_body_response;
 
 		int startServer();
 		void closeServer();
