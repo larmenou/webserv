@@ -7,6 +7,7 @@ SRCS_DIR	:= ./srcs
 NAME		:=	webserv
 PARSER_TEST	:= parser-test
 REQUEST_TEST := req
+CGI_TEST	:= cgi
 
 SRCS_F		:= 	main
 
@@ -17,7 +18,7 @@ SRCS_F		+= $(addprefix $(SRCS_DIR)/Config/, \
 					)
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/CGI/, \
-					PhpCGI \
+					CGI \
 					)
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Request/, \
@@ -46,6 +47,11 @@ $(PARSER_TEST): $(OBJ) srcs/Config/test.o
 
 $(REQUEST_TEST): $(OBJ) srcs/Request/test.o
 				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Request/test.o -o $@
+
+
+$(CGI_TEST): $(OBJ) srcs/CGI/test.o
+				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/CGI/test.o -o $@
+
 
 clean:
 				@rm -f $(OBJ)

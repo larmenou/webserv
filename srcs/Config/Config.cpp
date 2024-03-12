@@ -54,6 +54,15 @@ long         Config::str2perm(std::string &method_str)
         return ite->second;
 }
 
+std::string Config::perm2str(long perm)
+{
+    std::map<std::string, long>::const_iterator ite = str2permmap.begin();
+    for (; ite != str2permmap.end(); ite++)
+        if (ite->second == perm)
+            return ite->first;
+    throw std::runtime_error("Invalid permissions");
+}
+
 static void readAllFile(std::ifstream &fs, std::string &out)
 {
     std::string buff;
