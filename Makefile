@@ -1,6 +1,6 @@
 CXX			:=	c++
 CXXFLAGS	:=	-g -Wall -Wextra -Werror -std=c++98
-INCS		:= -I./includes
+INCS		:= -I./includes -I./srcs/Server/
 OBJFLAGS 	:=	-c
 SRCS_DIR	:= ./srcs
 
@@ -22,6 +22,7 @@ SRCS_F		+= $(addprefix $(SRCS_DIR)/CGI/, \
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Request/, \
 					Request \
+					)
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Server/, \
 					Server \
@@ -30,12 +31,12 @@ SRCS_F		+= $(addprefix $(SRCS_DIR)/Server/, \
 SRCS		:=	$(addsuffix .cpp, $(SRCS_F))
 OBJ			:=	$(addsuffix .o, $(SRCS_F))
 
-DEP			:= Makefile Server.hpp
+DEP			:= Makefile
 
 all: 		$(NAME)
 
 %.o:		%.cpp $(DEP)
-				$(CXX) $(CXXFLAGS) $(INCS) $(OBJFLAGS) $< -o $@ -I.
+				$(CXX) $(CXXFLAGS) $(INCS) $(OBJFLAGS) $< -o $@
 
 $(NAME):	$(OBJ)
 				$(CXX) $(CXXFLAGS) $(INCS) $(OBJ) -o $(NAME)
