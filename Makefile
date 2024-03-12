@@ -8,8 +8,7 @@ NAME		:=	webserv
 PARSER_TEST	:= parser-test
 REQUEST_TEST := req
 
-SRCS_F		:= 	main \
-				Server \
+SRCS_F		:= 	main
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Config/, \
 					Config \
@@ -23,6 +22,9 @@ SRCS_F		+= $(addprefix $(SRCS_DIR)/CGI/, \
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Request/, \
 					Request \
+
+SRCS_F		+= $(addprefix $(SRCS_DIR)/Server/, \
+					Server \
 					)
 
 SRCS		:=	$(addsuffix .cpp, $(SRCS_F))

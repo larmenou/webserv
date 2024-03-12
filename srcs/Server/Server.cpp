@@ -6,18 +6,18 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/06 17:15:22 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/12 09:01:32 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
-Server::Server(std::string ip_address, int port) : _ip_address(ip_address), _port(port), _socket(), _new_socket(), _socketAddress(), _socketAddress_len(sizeof(_socketAddress)), _serverMessage(buildResponse("index.html"))
+Server::Server(std::string ip_address, int port) : _ip_address(ip_address), _port(port), _socket_listen(), _fds(), _socketAddress(), _socketAddress_len(sizeof(_socketAddress)), _serverMessage(buildResponse("index.html"))
 {
 	//std::stringstream ss;
 	_socketAddress.sin_family = AF_INET;
 	_socketAddress.sin_port = htons(_port);
-	_socketAddress.sin_addr.s_addr = inet_addr(_ip_address.c_str());
+	_socketAddress.sin_addr.s_addr = INADDR_ANY;
 
 	/* ss << port;
 	std::string port_str = ss.str();
@@ -36,13 +36,13 @@ Server::~Server()
 
 int Server::startServer()
 {
-	_socket = socket(AF_INET, SOCK_STREAM, 0);
-	if (_socket < 0)
+	_socket_listen = socket(AF_INET, SOCK_STREAM, 0);
+	if (_socket_listen < 0)
 	{
 		std::cout << "Cannot create socket" << std::endl;
 		return (1);
 	}
-	if (bind(_socket, (sockaddr *)&_socketAddress, _socketAddress_len) < 0)
+	if (bind(_socket_listen, (sockaddr *)&_socketAddress, _socketAddress_len) < 0)
 	{
 		std::cout << "Cannot connect socket to address" << std::endl;
 		return (1);
@@ -53,72 +53,81 @@ int Server::startServer()
 
 void Server::closeServer()
 {
-	close(_socket);
-	close(_new_socket);
+	close(_socket_listen);
 	exit(0);
 }
 
 void Server::startListen()
 {
 	int bytesReceived;
+	int	nfds;
+	int ready;
+	int client_fd;
+	char buffer[BUFFER_SIZE];
 	
-	if (listen(_socket, 20) < 0)
+	if (listen(_socket_listen, 20) < 0)
 	{
 		std::cout << "Socket listen failed" << std::endl;
 		exit(1);
 	}
 
-	std::cout << "\n*** Listening on ADDRESS: " << inet_ntoa(_socketAddress.sin_addr) << " PORT: " << ntohs(_socketAddress.sin_port) << " ***\n\n";
+	std::cout << "\n*** Listening on ADDRESS: " << _ip_address << " PORT: " << ntohs(_socketAddress.sin_port) << " ***\n\n";
 
+	_fds[0].fd = _socket_listen;
+	_fds[0].events = POLLIN;
+	nfds = 1;
+	
 	while (true)
 	{
 		std::cout << "====== Waiting for a new connection ======\n\n\n";
-		acceptConnection(_new_socket);
 
-		char buffer[BUFFER_SIZE] = {0};
-		bytesReceived = read(_new_socket, buffer, BUFFER_SIZE);
-		
-		if (bytesReceived < 0)
+		ready = poll(_fds, nfds, -1);
+		if (ready == -1)
 		{
-			std::cout << "Failed to read bytes from client socket connection" << std::endl;
-			exit(1);
+			std::cout << "Poll failed." << std::endl;
+			break ;
 		}
 
-		std::cout << "------ Received Request from client ------\n\n";
-		std::cout << buffer << std::endl;
-
-		std::stringstream ss(buffer);
-		std::string word;
-		ss >> word;
-		ss >> word;
-		word.erase(0, 1);
-		std::fstream fs;
-		if (word.length() == 0)
-			_serverMessage = buildResponse("index.html");
-		else
+		for (int i = 0; i < nfds; i++)
 		{
-			fs.open(word.c_str());
-			if (fs)
+			if (_fds[i].revents & POLLIN)
 			{
-				_serverMessage = buildResponse(word);
+				if (_fds[i].fd == _socket_listen)
+				{
+					acceptConnection(client_fd);
+					_fds[nfds].fd = client_fd;
+					_fds[nfds].events = POLLIN;
+					nfds++;
+				}
 			}
 			else
 			{
-				_serverMessage = buildResponse("404error.html");
+				bytesReceived = read(_fds[i].fd, buffer, BUFFER_SIZE - 1);
+				if (bytesReceived > 0)
+				{
+					buffer[bytesReceived] = '\0';
+					std::cout << "------ Received Request from client ------\n\n";
+					std::cout << buffer << std::endl;
+
+					_serverMessage = "HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello World";
+					sendResponse(i);
+				}
+				close(_fds[i].fd);
+				nfds--;
+				i--;
 			}
 		}
-		sendResponse();
-
-		close(_new_socket);
 	}
 }
 
 void Server::acceptConnection(int &new_socket)
 {
-	new_socket = accept(_socket, (sockaddr *)&_socketAddress, &_socketAddress_len);
+	sockaddr_in client_addr;
+	socklen_t client_len = sizeof(client_addr);
+	new_socket = accept(_socket_listen, (sockaddr *)&client_addr, &client_len);
 	if (new_socket < 0)
 	{
-		std::cout << "Server failed to accept incoming connection from ADDRESS: " << inet_ntoa(_socketAddress.sin_addr) << "; PORT: " << ntohs(_socketAddress.sin_port) << std::endl;
+		std::cout << "Server failed to accept incoming connection" << std::endl;
 		exit(1);
 	}
 }
@@ -148,11 +157,11 @@ std::string Server::buildResponse(std::string filename)
 	return ss.str();
 }
 
-void Server::sendResponse()
+void Server::sendResponse(int i)
 {
 	unsigned long bytesSent;
 
-	bytesSent = write(_new_socket, _serverMessage.c_str(), _serverMessage.size());
+	bytesSent = write(_fds[i].fd, _serverMessage.c_str(), _serverMessage.size());
 
 	if (bytesSent == _serverMessage.size())
 	{
