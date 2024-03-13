@@ -13,7 +13,6 @@ int main()
     CGI cgi;
     std::string urn(req.getURN());
     Route r(conf.getServers()[0].findRouteFromURN(urn));
-
-    cgi.prepare(req, r);
-    std::cout << "Result :"<< cgi.forwardReq();
+    cgi.prepare(req, r, conf.getServers()[0], "127.0.0.1");
+    std::cout << "Result :\n"<< cgi.forwardReq();
 }

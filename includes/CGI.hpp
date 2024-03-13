@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <unistd.h>
+#include <algorithm>
 #include <sys/wait.h>
 #include "Request.hpp"
 #include "Route.hpp"
@@ -19,6 +20,8 @@ class CGI
         std::string _content_length;
         std::string _content_type;
 
+        std::map<std::string, std::string>  _env;
+
         CGI(CGI const &a);
         CGI  &operator=(CGI const &a);
 
@@ -27,12 +30,16 @@ class CGI
         void getContentLength();
         void getContentType();
         void getRequestMethod();
+        void getServerName(const ServerConf &server);
 
     public :
         ~CGI();
         CGI();
 
-        void        prepare(Request const &req, Route &route);
+        void        prepare(Request const &req,
+                        Route const &route,
+                        ServerConf const &server,
+                        std::string remoteaddr);
         std::string forwardReq();
         char        **buildEnvFromAttr();
 };

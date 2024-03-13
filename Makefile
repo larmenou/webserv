@@ -59,6 +59,8 @@ clean:
 fclean:		clean
 				@rm -f $(NAME)
 				@rm -f $(PARSER_TEST)
+				@rm -f $(CGI_TEST)
+				@rm -f $(REQUEST_TEST)
 
 re:			fclean all
 

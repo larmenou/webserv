@@ -3,21 +3,23 @@
 void    CGI::getPathInfo()
 {
     std::string rel_path(_request->getURN().substr(_route->getRoute().length()));
-    _path_info += _route->getRoot();
-    _path_info += rel_path;
+    _env["PATH_INFO"] = "";
+    _env["PATH_INFO"] += _route->getRoot();
+    _env["PATH_INFO"] += rel_path;
 }
 
 void    CGI::getQueryString()
 {
+    _env["QUERY_STRING"] = "";
     for (std::map<std::string, std::string>::const_iterator ite = _request->getURLParams().begin();
         ite != _request->getURLParams().end();
         ite++)
     {
-        _query_string += ite->first;
-        _query_string += '=';
-        _query_string += ite->second;
+        _env["QUERY_STRING"] += ite->first;
+        _env["QUERY_STRING"] += '=';
+        _env["QUERY_STRING"] += ite->second;
         if (++ite != _request->getURLParams().end())
-            _query_string += '&';
+            _env["QUERY_STRING"] += '&';
         ite--;
     }
 }
@@ -26,30 +28,45 @@ void    CGI::getContentLength()
 {
     std::map<std::string, std::string>::const_iterator ite = _request->getHeaders().find("Content-length");
 
+    _env["CONTENT_LENGTH"] = "";
     if (ite == _request->getHeaders().end())
     {
         std::stringstream ss;
 
         ss << _request->getBody().length();
-        _content_length = ss.str();
+        _env["CONTENT_LENGTH"]  = ss.str();
         return ;
     }
-    _content_length = ite->second;
+    _env["CONTENT_LENGTH"] = ite->second;
 }
 
 void    CGI::getRequestMethod()
 {
-    _request_method = Config::perm2str(_request->getMethod());
+    _env["REQUEST_METHOD"]  = Config::perm2str(_request->getMethod());
 }
 
 void    CGI::getContentType()
 {
     std::map<std::string, std::string>::const_iterator ite = _request->getHeaders().find("Content-type");
 
+    _env["CONTENT_TYPE"] = "";
     if (ite == _request->getHeaders().end())
         return ;
-    _content_type = ite->second;
+    _env["CONTENT_TYPE"] = ite->second;
 }
+
+void    CGI::getServerName(const ServerConf &server)
+{
+    std::map<std::string, std::string>::const_iterator  header_ite  = _request->getHeaders().find("Host");
+    std::vector<std::string>::const_iterator            sname_ite   = std::find(server.getNames().begin(), server.getNames().end(),  header_ite->second);
+
+    _env["SERVER_NAME"] = "";
+    if (header_ite == _request->getHeaders().end()
+        || sname_ite == server.getNames().end())
+        return ;
+    _env["SERVER_NAME"] = header_ite->second;
+}
+
 
 CGI::CGI()
 {
@@ -59,7 +76,10 @@ CGI::~CGI()
 {
 }
 
-void    CGI::prepare(Request const &req, Route &route)
+void    CGI::prepare(Request const &req,
+                        Route const &route,
+                        ServerConf const &server,
+                        std::string remoteaddr)
 {
     std::string query_string;
     std::string path_info;
@@ -72,6 +92,19 @@ void    CGI::prepare(Request const &req, Route &route)
     getContentLength();
     getRequestMethod();
     getContentType();
+    getServerName(server);
+    _env["REDIRECT_STATUS"] = "true";
+    _env["GATEWAY_INTERFACE"] = "CGI/1.1";
+    _env["SCRIPT_FILENAME"] = _env["PATH_INFO"];
+    _env["REMOTE_ADDR"] = remoteaddr;
+    _env["REMOTE_HOST"] = "";
+    _env["REMOTE_IDENT"] = "";
+    _env["REMOTE_USER"] = "";
+    ss << server.getPort();
+    _env["SERVER_PORT"] = ss.str();
+    ss.clear();
+    _env["SERVER_PROTOCOL"] = "HTTP/1.1";
+    _env["SERVER_SOFTWARE"] = "webserv/1.0";
 }
 
 static char *concatcpy(std::string key, std::string value)
@@ -96,18 +129,18 @@ static char *concatcpy(std::string key, std::string value)
 
 char    **CGI::buildEnvFromAttr()
 {
-    char **ret;
+    char    **ret;
+    size_t  i = 0;
 
-    ret = new char*[9];
-    ret[0] = concatcpy("REDIRECT_STATUS", "true");
-    ret[1] = concatcpy("QUERY_STRING", _query_string);
-    ret[2] = concatcpy("PATH_INFO", _path_info);
-    ret[3] = concatcpy("SCRIPT_FILENAME", _path_info);
-    ret[4] = concatcpy("REQUEST_METHOD", _request_method);
-    ret[5] = concatcpy("CONTENT_LENGTH", _content_length);
-    ret[6] = concatcpy("CONTENT_TYPE", _content_type);
-    ret[7] = concatcpy("GATEWAY_INTERFACE", "CGI/1.1");
-    ret[8] = NULL;
+    ret = new char*[_env.size()+1];
+    for (std::map<std::string, std::string>::const_iterator ite = _env.begin();
+        ite != _env.end();
+        ite++)
+    {
+        ret[i] = concatcpy(ite->first, ite->second);
+        i++;
+    }
+    ret[i] = NULL;
     return ret;
 }
 
@@ -129,7 +162,6 @@ std::string  CGI::forwardReq()
     if (pipe(fds) < 0)
         throw std::runtime_error("Could not open pipe.");
     pid = fork();
-    env = buildEnvFromAttr();
     if (pid == -1)
         throw std::runtime_error("Could not fork");
     if (pid == 0)
@@ -138,6 +170,7 @@ std::string  CGI::forwardReq()
         dup2(fds[0], STDIN_FILENO);
         close(fds[0]);
         close(fds[1]);
+        env = buildEnvFromAttr();
         execve("/usr/bin/php-cgi", av, env);
         deleteEnv(env, 9);
         exit(1);
@@ -146,15 +179,15 @@ std::string  CGI::forwardReq()
     {
         int s;
 
-        deleteEnv(env, 9);
-        if (_request_method == "POST")
+        if (_env["REQUEST_METHOD"] == "POST")
             write(fds[1], _request->getBody().c_str(), _request->getBody().length());
         close(fds[1]);
         wait(&s);
         char    c;
-        while ((read(fds[0], &c, 1)) != 0)
+        while ((read(fds[0], &c, 1)) > 0)
             result += c;
         close(fds[0]);
     }
+    _env.clear();
     return result;
 }
