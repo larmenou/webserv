@@ -14,12 +14,6 @@ class CGI
     private :
         const Request     *_request;
         const Route       *_route;
-        std::string _query_string;
-        std::string _request_method;
-        std::string _path_info;
-        std::string _content_length;
-        std::string _content_type;
-
         std::map<std::string, std::string>  _env;
 
         CGI(CGI const &a);
