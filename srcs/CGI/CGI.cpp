@@ -67,6 +67,11 @@ void    CGI::getServerName(const ServerConf &server)
     _env["SERVER_NAME"] = header_ite->second;
 }
 
+void    CGI::setCGI(std::string cgiPath)
+{
+    _cgi_path = cgiPath;
+}
+
 
 CGI::CGI()
 {
@@ -171,7 +176,7 @@ std::string  CGI::forwardReq()
         close(fds[0]);
         close(fds[1]);
         env = buildEnvFromAttr();
-        execve("/usr/bin/php-cgi", av, env);
+        execve(_cgi_path.c_str(), av, env);
         deleteEnv(env, 9);
         exit(1);
     }

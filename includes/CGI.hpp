@@ -12,8 +12,9 @@
 class CGI
 {
     private :
-        const Request     *_request;
-        const Route       *_route;
+        const Request       *_request;
+        const Route         *_route;
+        std::string         _cgi_path;
         std::map<std::string, std::string>  _env;
 
         CGI(CGI const &a);
@@ -36,6 +37,7 @@ class CGI
                         std::string remoteaddr);
         std::string forwardReq();
         char        **buildEnvFromAttr();
+        void        setCGI(std::string cgiPath);
 };
 
 #endif
