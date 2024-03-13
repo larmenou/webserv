@@ -64,6 +64,7 @@ class   Config
         const ServerConf    &getServerFromHostAndIP(std::string &host, std::string &ip);
         const std::vector<ServerConf>   &getServers();
         static long         str2perm(std::string &method_str);
+        static std::string  perm2str(long perm);
 };
 
 #endif

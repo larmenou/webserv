@@ -8,6 +8,7 @@
 #include "Config.hpp"
 
 bool    getlineCRLF(std::stringstream &ss, std::string &str);
+void    trimstr(std::string &str);
 
 class Request
 {

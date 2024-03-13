@@ -31,6 +31,19 @@ bool    getlineCRLF(std::stringstream &ss, std::string &str)
     return true;
 }
 
+void    trimstr(std::string &str)
+{
+    std::string tmp;
+
+    size_t  begin = str.find_first_not_of(" \t\n\v\f\r");
+    if (begin == std::string::npos)
+        return ;
+    size_t  end = str.find_last_not_of(" \t\n\v\f\r");
+
+    tmp = str.substr(begin, end - begin + 1);
+    str = tmp;
+}
+
 Request::Request(std::string &raw_req)
 {
     parseFromRaw(raw_req);
@@ -70,6 +83,7 @@ void    Request::parseLineHeader(std::string &line)
     split(line, out, ':');
     if (out.size() != 2)
         return ;
+    trimstr(out[0]); trimstr(out[1]);
     _headers[out[0]] = out[1];
 }
 
