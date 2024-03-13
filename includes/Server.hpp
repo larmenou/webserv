@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/12 13:50:27 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/13 10:46:54 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,9 @@
 #include <stdlib.h>
 #include <netdb.h>
 
-#define BUFFER_SIZE 30720
+#include "Request.hpp"
+
+#define BUFF_SIZE 30720
 #define MAX_EVENTS 20
 
 class Server
@@ -42,7 +44,7 @@ class Server
 		int startServer();
 		void closeServer();
 		void acceptConnection(int &new_socket);
-		std::string buildResponse(std::string filename);
+		void buildResponse(Request req);
 		void sendResponse(int i);
 	
 	public:
