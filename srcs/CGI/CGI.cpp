@@ -163,7 +163,7 @@ std::string  CGI::forwardReq()
         throw std::runtime_error("Could not open pipe.");
     pid = fork();
     if (pid == -1)
-        throw std::runtime_error("Could not fork");
+        throw std::runtime_error("Could not fork.");
     if (pid == 0)
     {
         dup2(fds[1], STDOUT_FILENO);
@@ -177,15 +177,21 @@ std::string  CGI::forwardReq()
     }
     else
     {
-        int s;
+        int     s;
+        char    c;
+        ssize_t rd;
 
         if (_env["REQUEST_METHOD"] == "POST")
             write(fds[1], _request->getBody().c_str(), _request->getBody().length());
         close(fds[1]);
-        wait(&s);
-        char    c;
-        while ((read(fds[0], &c, 1)) > 0)
+        if (waitpid(pid, &s, WUNTRACED) < 0 || s != 0)
+            throw std::runtime_error("Serverside error");
+        do{
+            rd = read(fds[0], &c, 1);
+            if (rd < 0)
+                throw std::runtime_error("Error while reading output of CGI.");
             result += c;
+        } while (rd > 0);
         close(fds[0]);
     }
     _env.clear();
