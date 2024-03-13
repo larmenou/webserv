@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/12 14:34:18 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/13 09:58:49 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,6 +66,7 @@ void Server::startListen()
 	int client_fd;
 	char buffer[BUFFER_SIZE];
 	std::stringstream http;
+	bool keep_alive = false;
 	
 	if (listen(_socket_listen, 20) < 0)
 	{
@@ -116,41 +117,42 @@ void Server::startListen()
 					Request req(str);
 					std::cout << req;
 
-					/* _body_response = "<!DOCTYPE html><html lang=\"en\"><head><title>WebServer</title></head><body><h1> HOME </h1><p> Hello from your Server :) </p><a href=\"test.html\">Test</a></body></html>";
-					http << "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n\r\n" << _body_response;
-					_header_response = http.str();
-					write(_fds[i].fd, _header_response.c_str(), _header_response.length()); */
-
 					if (req.getURN() == "/" || req.getURN() == "/index.html")
 					{
 						_body_response = "<!DOCTYPE html><html lang=\"en\"><head><title>WebServer</title></head><body><h1> HOME </h1><p> Hello from your Server :) </p><a href=\"test.html\">Test</a></body></html>";
-						http << "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n\r\n";
-						_header_response = http.str();
-						write(_fds[i].fd, _header_response.c_str(), _header_response.size());
-						write(_fds[i].fd, _body_response.c_str(), _body_response.size());
+						http << "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+						//_header_response = http.str();
 					}
 					else if (req.getURN() == "/test.html")
 					{
-						_body_response = "<!DOCTYPE html><html lang=\"en\"><head><title>WebServer</title></head><body><h1> TEST </h1><p> Teeeeeest </p><a href=\"index.html\"> Index</a><a href=\"truc.html\"> Truc : vers 404</a></body></html>";
-						http << "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n\r\n";
-						_header_response = http.str();
-						write(_fds[i].fd, _header_response.c_str(), _header_response.size());
-						write(_fds[i].fd, _body_response.c_str(), _body_response.size());
+						_body_response = "<!DOCTYPE html><html lang=\"en\"><head><title>WebServer</title></head><body><h1> TEST </h1><p> Teeeeeest </p><a href=\"index.html\"> Index</a><p></p><a href=\"truc.html\">Truc : vers 404</a></body></html>";
+						http << "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+						//_header_response = http.str();
 					}
 					else if (req.getURN() == "/favicon.ico")
 					{}
 					else
 					{
 						_body_response = "<!DOCTYPE html><html lang=\"en\"><head><title>WebServer</title></head><body><h1> ERROR 404 </h1></body></html>";
-						http << "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n\r\n";
-						_header_response = http.str();
-						write(_fds[i].fd, _header_response.c_str(), _header_response.size());
-						write(_fds[i].fd, _body_response.c_str(), _body_response.size());
+						http << "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+						//_header_response = http.str();
 					}
 					
-					//sendResponse(i);
-					_header_response = "";
-					_body_response = "";
+					if (req.getHeaders().find("Connection")->second == " keep-alive")
+					{
+						http << "Connection: keep-alive\r\n\r\n";
+						_header_response = http.str();
+						keep_alive = true;
+					}
+					else
+					{
+						http << "Connection: close\r\n\r\n";
+						_header_response = http.str();
+						keep_alive = false;
+					}
+					http.clear();
+					http.str("");
+					sendResponse(i);
 				}
 				close(_fds[i].fd);
 				nfds--;
@@ -199,7 +201,7 @@ std::string Server::buildResponse(std::string filename)
 
 void Server::sendResponse(int i)
 {
-	write(_fds[i].fd, _header_response.c_str(), _header_response.size());
-	//send(_fds[i].fd, _body_response.c_str(), _body_response.size(), 0);
+	send(_fds[i].fd, _header_response.c_str(), _header_response.size(), 0);
+	send(_fds[i].fd, _body_response.c_str(), _body_response.size(), 0);
 	std::cout << "------ Server Response sent to client ------\n\n";
 }
