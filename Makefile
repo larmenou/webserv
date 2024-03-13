@@ -1,6 +1,6 @@
 CXX			:=	c++
 CXXFLAGS	:=	-g -Wall -Wextra -Werror -std=c++98
-INCS		:= -I./includes -I./srcs/Server/
+INCS		:= -I./includes
 OBJFLAGS 	:=	-c
 SRCS_DIR	:= ./srcs
 
@@ -26,6 +26,7 @@ SRCS_F		+= $(addprefix $(SRCS_DIR)/Request/, \
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Server/, \
 					Server \
+					RegisteredUsers \
 					)
 
 SRCS		:=	$(addsuffix .cpp, $(SRCS_F))
