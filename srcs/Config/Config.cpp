@@ -8,6 +8,7 @@ Config::Config()
     serverUpdateFuncs["server_name"] = &Config::server_name;
     serverUpdateFuncs["error_page"] = &Config::error_page;
     serverUpdateFuncs["client_max_body_size"] = &Config::client_max_body_size;
+    serverUpdateFuncs["root"] = &Config::server_root;
 
     routeUpdateFuncs["root"] = &Config::root;
     routeUpdateFuncs["rewrite"] = &Config::rewrite;
@@ -294,6 +295,14 @@ bool    Config::client_max_body_size(std::vector<std::string> &dirs, ServerConf 
         return false;
     conf.setBodySizeLimit(size);
     return false;
+}
+
+bool    Config::server_root(std::vector<std::string> &dirs, ServerConf &conf)
+{
+    if (dirs.size() != 2)
+        return false;
+    conf.setRoot(dirs[1]);
+    return true;
 }
 
 bool    Config::root(std::vector<std::string> &dirs, Route &conf)

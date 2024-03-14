@@ -6,6 +6,7 @@ ServerConf::~ServerConf()
 
 ServerConf::ServerConf() : _listDir(true),
                         _servernames(),
+                        _root("./"),
                         _ip("0.0.0.0"),
                         _port(-1),
                         _body_size_limit(1000000)
@@ -26,6 +27,7 @@ ServerConf  &ServerConf::operator=(ServerConf const &a)
     _body_size_limit = a._body_size_limit;
     _routes = a._routes;
     _error_pages = a._error_pages;
+    _root = a._root;
 
     return *this;
 }
@@ -34,8 +36,9 @@ size_t                          ServerConf::getBodySizeLimit() const { return _b
 const std::string               &ServerConf::getIP() const { return _ip; }
 int                             ServerConf::getPort() const { return _port; }
 const std::vector<std::string>  &ServerConf::getNames() const { return _servernames; }
+const std::string               &ServerConf::getRoot() const { return _root; }
 
-const std::string               ServerConf::getErrorPage(unsigned int code) const
+const std::string               &ServerConf::getErrorPage(unsigned int code) const
 {
     std::map<unsigned int, std::string>::const_iterator   ite;
 
@@ -77,6 +80,7 @@ void    ServerConf::setPort(int port) {
 void    ServerConf::setBodySizeLimit(size_t size) { _body_size_limit = size;}
 void    ServerConf::addServerName(std::string &name) { _servernames.push_back(name); }
 void    ServerConf::addErrorPage(unsigned int code, std::string &path) { _error_pages[code] = path; }
+void    ServerConf::setRoot(std::string root) { _root = root; }
 
 std::ostream    &operator<<(std::ostream &os, const ServerConf &conf)
 {
@@ -88,6 +92,7 @@ std::ostream    &operator<<(std::ostream &os, const ServerConf &conf)
             os << "'" << conf.getNames()[i] << "'" << (i != conf.getNames().size() - 1 ? ", " : "");
     }
     os << "\n\t- client body size limit at " <<  conf.getBodySizeLimit();
+    os << "\n\t- default serveur root : " << conf.getRoot();
 
     return os;
 }
