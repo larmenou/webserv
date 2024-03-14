@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/14 08:37:12 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/14 14:44:10 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,11 @@ Server::Server(std::string ip_address, int port) : _ip_address(ip_address), _por
 	_socketAddress.sin_family = AF_INET;
 	_socketAddress.sin_port = htons(_port);
 	_socketAddress.sin_addr.s_addr = INADDR_ANY;
+
+	_status_code.insert(std::pair<int, std::string>(200, "OK"));
+	_status_code.insert(std::pair<int, std::string>(201, "Created"));
+	_status_code.insert(std::pair<int, std::string>(401, "Unauthorized"));
+	_status_code.insert(std::pair<int, std::string>(404, "Not Found"));
 
 	if (startServer() != 0)
 	{
@@ -106,6 +111,8 @@ void Server::startListen()
 					buffer[bytesReceived] = '\0';
 					std::cout << "------ Received Request from client ------\n\n";
 
+					std::cout << buffer << std::endl;
+
 					std::stringstream ss(buffer);
 					std::string str = ss.str();
 					Request req(str);
@@ -145,30 +152,35 @@ void Server::acceptConnection(int &new_socket)
 void Server::buildResponse(Request req)
 {
 	std::stringstream http;
+	std::string filename;
+	int fd;
+	int status = 200;
+
+	_body_response.clear();
+
+	if (req.getURN() != "/favicon.ico")
+	{
+		filename = "./html";
+		filename += req.getURN();
+		
+		if (filename == "./html/")
+			filename += "index.html";
+
+		fd = open(filename.c_str(), O_RDONLY);
+		if (fd == -1)
+		{
+			fd = open("./html/404error.html", O_RDONLY);
+			status = 404;
+		}
+
+		char c;
+		while (read(fd, &c, 1) > 0)
+			_body_response += c;
+		
+		http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	
-	if (req.getURN() == "/" || req.getURN() == "/index.html")
-	{
-		_body_response = "<!DOCTYPE html><html lang=\"en\"><head><title>WebServer</title></head><body><h1> HOME </h1><p> Hello from your Server :) </p><a href=\"test.html\">Test</a><p></p><a href=\"form.html\"> Connexion</a></body></html>";
-		http << "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+		close(fd);
 	}
-	else if (req.getURN() == "/test.html")
-	{
-		_body_response = "<!DOCTYPE html><html lang=\"en\"><head><title>WebServer</title></head><body><h1> TEST </h1><p> Teeeeeest </p><a href=\"index.html\"> Index</a><p></p><a href=\"truc.html\">Truc</a> : vers 404</body></html>";
-		http << "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-	}
-	else if (req.getURN() == "/form.html")
-	{
-		_body_response = "<!DOCTYPE html><html><head><title>Register</title></head><body><h1>Register</h1><form action=\"/index.html\" method=\"post\"><label for=\"nom\">Nom : </label><input type=\"text\" id=\"nom\" name=\"nom\" required><br><br><label for=\"password\">Mot de passe : </label><input type=\"password\" id=\"password\" name=\"password\" required><br><input type=\"submit\" value=\"Envoyer\"></form></body></html>";
-		http << "HTTP/1.1 201 Created\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-	}
-	else if (req.getURN() == "/favicon.ico")
-	{}
-	else
-	{
-		_body_response = "<!DOCTYPE html><html lang=\"en\"><head><title>WebServer</title></head><body><h1> ERROR 404 </h1></body></html>";
-		http << "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-	}
-	
 	
 	if (req.getHeaders().find("Connection")->second == " keep-alive")
 	{
