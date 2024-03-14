@@ -47,12 +47,7 @@ void    CGI::getRequestMethod()
 
 void    CGI::getContentType()
 {
-    std::map<std::string, std::string>::const_iterator ite = _request->getHeaders().find("Content-type");
-
-    _env["CONTENT_TYPE"] = "";
-    if (ite == _request->getHeaders().end())
-        return ;
-    _env["CONTENT_TYPE"] = ite->second;
+    _env["CONTENT_TYPE"] = _request->findHeader("Content-type");
 }
 
 void    CGI::getServerName(const ServerConf &server)
@@ -189,7 +184,7 @@ std::string  CGI::forwardReq()
         if (_env["REQUEST_METHOD"] == "POST")
             write(fds[1], _request->getBody().c_str(), _request->getBody().length());
         close(fds[1]);
-        if (waitpid(pid, &s, WUNTRACED) < 0 || s != 0)
+        if (waitpid(pid, &s, WUNTRACED) < 0)
             throw std::runtime_error("Serverside error");
         do{
             rd = read(fds[0], &c, 1);
