@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/13 13:45:02 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/14 08:37:12 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,7 +116,6 @@ void Server::startListen()
 					{
 						std::string str = req.getBody();
 						users.addDb(str);
-						std::cout << users.getDb().size() << std::endl;
 					}
 
 					buildResponse(req);
@@ -160,7 +159,7 @@ void Server::buildResponse(Request req)
 	else if (req.getURN() == "/form.html")
 	{
 		_body_response = "<!DOCTYPE html><html><head><title>Register</title></head><body><h1>Register</h1><form action=\"/index.html\" method=\"post\"><label for=\"nom\">Nom : </label><input type=\"text\" id=\"nom\" name=\"nom\" required><br><br><label for=\"password\">Mot de passe : </label><input type=\"password\" id=\"password\" name=\"password\" required><br><input type=\"submit\" value=\"Envoyer\"></form></body></html>";
-		http << "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+		http << "HTTP/1.1 201 Created\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	}
 	else if (req.getURN() == "/favicon.ico")
 	{}
@@ -169,6 +168,7 @@ void Server::buildResponse(Request req)
 		_body_response = "<!DOCTYPE html><html lang=\"en\"><head><title>WebServer</title></head><body><h1> ERROR 404 </h1></body></html>";
 		http << "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	}
+	
 	
 	if (req.getHeaders().find("Connection")->second == " keep-alive")
 	{

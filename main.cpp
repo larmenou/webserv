@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:29:40 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/11 14:54:33 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/14 09:16:16 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,13 +17,13 @@ int main (int ac, char **av)
 {
 	
 	if (ac != 2)
-		return std::cerr << "Usage : ./parser-tester <.conf path>" << std::endl, 1;
+		return std::cerr << "Usage : ./webserv <.conf path>" << std::endl, 1;
 	try {
 		Config conf;
 		std::string path(av[1]);
 		std::string host("");
 		std::string ip("127.0.0.1");
-		std::string urn("/redirect?test=aaaa");
+		std::string urn("/");
 		conf.initConfig(path);
 		const ServerConf &server = conf.getServerFromHostAndIP(host, ip);
 
