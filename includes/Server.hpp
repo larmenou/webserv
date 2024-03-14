@@ -6,15 +6,13 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/13 10:46:54 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/14 14:21:51 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include <string>
-#include <iostream>
-#include <sstream>
 #include <fstream>
 #include <vector>
 #include <poll.h>
@@ -23,6 +21,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <netdb.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "Request.hpp"
 
@@ -32,14 +32,15 @@
 class Server
 {
 	private:
-		std::string			_ip_address;
-		int					_port;
-		int					_socket_listen;
-		struct pollfd 		_fds[MAX_EVENTS];
-		struct sockaddr_in	_socketAddress;
-        unsigned int		_socketAddress_len;
-		std::string 		_header_response;
-		std::string 		_body_response;
+		std::string					_ip_address;
+		int							_port;
+		int							_socket_listen;
+		struct pollfd 				_fds[MAX_EVENTS];
+		struct sockaddr_in			_socketAddress;
+        unsigned int				_socketAddress_len;
+		std::string 				_header_response;
+		std::string 				_body_response;
+		std::map<int, std::string>	_status_code;
 
 		int startServer();
 		void closeServer();
