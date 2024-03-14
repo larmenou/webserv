@@ -15,6 +15,7 @@ class ServerConf
         std::vector<std::string>    _servernames;
         std::vector<Route>          _routes;
         std::map<unsigned int, std::string> _error_pages;
+        std::string                 _root;
         std::string                 _ip;
         int                         _port;
         size_t                      _body_size_limit;
@@ -29,7 +30,8 @@ class ServerConf
         const std::string               &getIP() const;
         int                             getPort() const;
         const std::vector<std::string>  &getNames() const;
-        const std::string               getErrorPage(unsigned int code) const;
+        const std::string               &getErrorPage(unsigned int code) const;
+        const std::string               &getRoot() const;
 
         bool        hasServername(std::string &name) const;
         const Route &findRouteFromURN(std::string &urn) const;
@@ -40,6 +42,7 @@ class ServerConf
         void        setBodySizeLimit(size_t size);
         void        addServerName(std::string &name);
         void        addErrorPage(unsigned int code, std::string &path);
+        void        setRoot(std::string root);
 };
 
 std::ostream    &operator<<(std::ostream &os, const ServerConf &conf);
