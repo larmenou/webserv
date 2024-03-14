@@ -13,7 +13,7 @@ Config::Config()
     routeUpdateFuncs["rewrite"] = &Config::rewrite;
     routeUpdateFuncs["allowed_methods"] = &Config::allowed_methods;
     routeUpdateFuncs["autoindex"] = &Config::autoindex;
-    routeUpdateFuncs["dir_default"] = &Config::dir_default;
+    routeUpdateFuncs["index"] = &Config::dir_default;
     routeUpdateFuncs["cgi_extension"] = &Config::cgi_extension;
 
     str2permmap["GET"] = GET;

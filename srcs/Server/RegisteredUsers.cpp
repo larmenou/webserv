@@ -25,8 +25,6 @@ void RegisteredUsers::addDb(std::string &str)
 		pos += 9;
 		password = str.substr(pos);
 
-		std::cout << password << std::endl;
-
 		_db.insert(std::pair<std::string, std::string>(nom, password));
 	}
 }
