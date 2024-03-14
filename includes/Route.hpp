@@ -46,12 +46,12 @@ class Route
         bool    isAcceptingUploads() const;
         bool    isListingDirs() const;
 
-        void    setRoute(std::string &route);
-        void    setRoot(std::string &root);
-        void    setDirFile(std::string &dirFile);
-        void    setCgiExtension(std::string &getCgiExtension);
-        void    setSavePath(std::string &savePath);
-        void    setRedirection(std::string &from, std::string &to, long code);
+        void    setRoute(std::string route);
+        void    setRoot(std::string root);
+        void    setDirFile(std::string dirFile);
+        void    setCgiExtension(std::string getCgiExtension);
+        void    setSavePath(std::string savePath);
+        void    setRedirection(std::string from, std::string to, long code);
         void    setMethodPerms(long perms);
         void    setUpload(bool acceptsUploads);
         void    setListDirectory(bool listDir);

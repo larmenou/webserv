@@ -34,7 +34,7 @@ class Request
         const std::string   getURN() const;
         const std::string   getHTTPVersion() const;
         const std::string   getBody() const;
-        const std::string   findHeader(std::string const &key) const;
+        const std::string   findHeader(std::string key) const;
         const std::map<std::string, std::string>  &getHeaders() const;
         const std::map<std::string, std::string>  &getURLParams() const;
 };
