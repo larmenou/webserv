@@ -68,12 +68,18 @@ void    CGI::setCGI(std::string cgiPath)
 }
 
 
-CGI::CGI()
+CGI::CGI() : _env_execve(NULL)
 {
 }
 
 CGI::~CGI()
 {
+    if (_env_execve != NULL)
+    {
+        for (size_t i = 0; i < _env.size(); i++)
+            delete _env_execve[i];
+        delete[] _env_execve;
+    }
 }
 
 void    CGI::prepare(Request const &req,
@@ -144,18 +150,10 @@ char    **CGI::buildEnvFromAttr()
     return ret;
 }
 
-static void deleteEnv(char **env, size_t len)
-{
-    for (size_t i = 0; i < len; i++)
-        delete env[i];
-    delete[] env;
-}
-
 std::string  CGI::forwardReq()
 {
     std::string result;
     char        *av[] = {NULL, NULL};
-    char        **env;
     int         fds[2];
     pid_t       pid;
 
@@ -170,9 +168,8 @@ std::string  CGI::forwardReq()
         dup2(fds[0], STDIN_FILENO);
         close(fds[0]);
         close(fds[1]);
-        env = buildEnvFromAttr();
-        execve(_cgi_path.c_str(), av, env);
-        deleteEnv(env, 9);
+        _env_execve = buildEnvFromAttr();
+        execve(_cgi_path.c_str(), av, _env_execve);
         exit(1);
     }
     else

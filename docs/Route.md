@@ -8,9 +8,8 @@ Route is a class that stores a route's informations.
 - `Route()` : Default constructor which initalizes the method permissions to `POST or GET` and directory listing to false.
 - `Route(Route const &a)` : Copy constructor
 
-### Methods
 
-#### Getters
+### Getters
 - `const std::string   &getRoute() const`
 - `const std::string   &getRoot() const`
 - `const std::string   &getDirFile() const`
@@ -22,7 +21,7 @@ Route is a class that stores a route's informations.
 - `bool    isAcceptingUploads() const`
 - `bool    isListingDirs() const`
 
-#### Setters
+### Setters
 - `void    setRoute(std::string route)`
 - `void    setRoot(std::string root)`
 - `void    setDirFile(std::string dirFile)`

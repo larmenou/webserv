@@ -7,7 +7,7 @@ Config is a class that allows the server to parse .conf files following an nginx
 ### Constructors
 - `Config(std::string &config_path)` : Constructor that directly initializes the object by parsing a file located at `config_path`.
 
-### Methods
+### Utils
 - `void    initConfig(std::string &config_path)` : Method that parses 
 - `const ServerConf    &getServerFromHostAndIP(std::string host, std::string ip)` : Finds and returns the corresponding constant reference to the host from an IP and the Host header.
 
