@@ -6,14 +6,14 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/14 14:44:10 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/15 10:44:10 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "RegisteredUsers.hpp"
 
-Server::Server(std::string ip_address, int port) : _ip_address(ip_address), _port(port), _socket_listen(), _fds(), _socketAddress(), _socketAddress_len(sizeof(_socketAddress)), _body_response()
+Server::Server(std::string ip_address, int port, Route route, std::vector<ServerConf> servers) : _ip_address(ip_address), _port(port), _socket_listen(), _fds(), _socketAddress(), _socketAddress_len(sizeof(_socketAddress)), _body_response()
 {
 	_socketAddress.sin_family = AF_INET;
 	_socketAddress.sin_port = htons(_port);
@@ -23,6 +23,10 @@ Server::Server(std::string ip_address, int port) : _ip_address(ip_address), _por
 	_status_code.insert(std::pair<int, std::string>(201, "Created"));
 	_status_code.insert(std::pair<int, std::string>(401, "Unauthorized"));
 	_status_code.insert(std::pair<int, std::string>(404, "Not Found"));
+
+	_route = route;
+	_servers = servers;
+	//_default_dir = _servers;
 
 	if (startServer() != 0)
 	{

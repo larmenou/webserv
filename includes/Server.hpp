@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/14 14:21:51 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/15 09:53:21 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,9 @@ class Server
 		std::string 				_header_response;
 		std::string 				_body_response;
 		std::map<int, std::string>	_status_code;
+		std::string					_default_dir;
+		Route						_route;
+		std::vector<ServerConf>		_servers;
 
 		int startServer();
 		void closeServer();
@@ -49,8 +52,10 @@ class Server
 		void sendResponse(int i);
 	
 	public:
-		Server(std::string ip_address, int port);
+		Server(std::string ip_address, int port, Route route, std::vector<ServerConf> servers);
 		~Server();
+
+		//void setDefaultDir(std::string dir);
 
 		void startListen();
 };

@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:29:40 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/14 09:16:16 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/15 09:33:53 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,11 @@ int main (int ac, char **av)
 			std::cout << servers[i] << std::endl;
 		}
 
-		Server s = Server(server.getIP(), server.getPort());
+		std::cout << "#############" << std::endl;
+		std::cout << route.getRoot() << std::endl;
+		std::cout << "#############" << std::endl;
+
+		Server s = Server(server.getIP(), server.getPort(), route);
 		s.startListen();
 	} catch (std::exception &e)
 	{
