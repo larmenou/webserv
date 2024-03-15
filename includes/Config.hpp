@@ -54,15 +54,16 @@ class   Config
         bool                dir_default(std::vector<std::string> &dirs, Route &conf);
         bool                cgi_extension(std::vector<std::string> &dirs, Route &conf);
 
-    public :
         Config();
         Config(Config const &a);
-        Config(std::string &config_path);
-        ~Config();
         Config  &operator=(Config const &a);
 
+    public :
+        Config(std::string config_path);
+        ~Config();
+
         void    initConfig(std::string &config_path);
-        const ServerConf    &getServerFromHostAndIP(std::string &host, std::string &ip);
+        const ServerConf    &getServerFromHostAndIP(std::string host, std::string ip);
         const std::vector<ServerConf>   &getServers();
         static long         str2perm(std::string &method_str);
         static std::string  perm2str(long perm);

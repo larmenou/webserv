@@ -2,7 +2,7 @@
 
 std::map<std::string, long> Config::str2permmap;
 
-Config::Config()
+Config::Config(std::string config_path)
 {
     serverUpdateFuncs["listen"] = &Config::listen;
     serverUpdateFuncs["server_name"] = &Config::server_name;
@@ -26,6 +26,8 @@ Config::Config()
     str2permmap["DELETE"] = DELETE;
     str2permmap["PATCH"] = PATCH;
     str2permmap["TRACE"] = TRACE;
+
+    initConfig(config_path);
 }
 
 Config::~Config()
@@ -379,10 +381,10 @@ bool    Config::cgi_extension(std::vector<std::string> &dirs, Route &conf)
     return true;
 }
 
-const ServerConf    &Config::getServerFromHostAndIP(std::string &host, std::string &ip)
+const ServerConf    &Config::getServerFromHostAndIP(std::string host, std::string ip)
 {
     bool        foundIP;
-    size_t      server_idx;
+    size_t      server_idx = 0;
 
     foundIP = false;
     for (size_t i = 0; i < _servers.size(); i++)
@@ -398,7 +400,7 @@ const ServerConf    &Config::getServerFromHostAndIP(std::string &host, std::stri
                 return _servers[i];
         }
     }
-    if (foundIP == false)
+    if (foundIP == false && host != "")
         throw std::runtime_error("IP not found.");
     return _servers[server_idx];
 }
