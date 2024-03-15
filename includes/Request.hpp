@@ -30,10 +30,11 @@ class Request
         Request(std::string &raw_req);
         ~Request();
 
+        long                getMethod() const;
         const std::string   getURN() const;
         const std::string   getHTTPVersion() const;
         const std::string   getBody() const;
-        long                getMethod() const;
+        const std::string   findHeader(std::string key) const;
         const std::map<std::string, std::string>  &getHeaders() const;
         const std::map<std::string, std::string>  &getURLParams() const;
 };

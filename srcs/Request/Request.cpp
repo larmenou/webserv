@@ -60,6 +60,14 @@ long                Request::getMethod() const { return _method; }
 const std::map<std::string, std::string>  &Request::getHeaders() const { return _headers; }
 const std::map<std::string, std::string>  &Request::getURLParams() const { return _getParams; }
 
+const std::string   Request::findHeader(std::string key) const
+{
+    std::map<std::string, std::string>::const_iterator ite = _headers.find(key);
+    if (ite == _headers.end())
+        return "";
+    return ite->second;
+}
+
 
 static void getURNFromSS(std::stringstream &ss,
                     long        &method,

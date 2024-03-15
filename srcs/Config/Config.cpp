@@ -399,7 +399,7 @@ const ServerConf    &Config::getServerFromHostAndIP(std::string &host, std::stri
         }
     }
     if (foundIP == false)
-        throw std::exception();
+        throw std::runtime_error("IP not found.");
     return _servers[server_idx];
 }
 

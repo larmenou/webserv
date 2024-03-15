@@ -49,14 +49,14 @@ const std::string               &ServerConf::getErrorPage(unsigned int code) con
 }
 
 
-bool    ServerConf::hasServername(std::string &name) const
+bool    ServerConf::hasServername(std::string name) const
 {
     if (std::find(_servernames.begin(), _servernames.end(), name) != _servernames.end())
         return true;
     return false;
 }
 
-const Route &ServerConf::findRouteFromURN(std::string &urn) const
+const Route &ServerConf::findRouteFromURN(std::string urn) const
 {
     if (_routes.size() == 0)
         throw std::runtime_error("No route");
@@ -71,15 +71,15 @@ const Route &ServerConf::findRouteFromURN(std::string &urn) const
 }
 
 
-void    ServerConf::setIP(std::string &ip) { _ip = ip;}
+void    ServerConf::setIP(std::string ip) { _ip = ip;}
 void    ServerConf::setRoutes(std::vector<Route> &routes) { _routes = routes; }
 void    ServerConf::setPort(int port) {
     if (_port == -1)
         _port = port;
 }
 void    ServerConf::setBodySizeLimit(size_t size) { _body_size_limit = size;}
-void    ServerConf::addServerName(std::string &name) { _servernames.push_back(name); }
-void    ServerConf::addErrorPage(unsigned int code, std::string &path) { _error_pages[code] = path; }
+void    ServerConf::addServerName(std::string name) { _servernames.push_back(name); }
+void    ServerConf::addErrorPage(unsigned int code, std::string path) { _error_pages[code] = path; }
 void    ServerConf::setRoot(std::string root) { _root = root; }
 
 std::ostream    &operator<<(std::ostream &os, const ServerConf &conf)
