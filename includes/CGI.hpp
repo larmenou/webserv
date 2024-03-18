@@ -16,10 +16,10 @@ class CGI
         const Route         *_route;
         std::map<std::string, std::string>  _env;
         std::map<std::string, std::string>  _headers;
+        std::string         _body;
         std::string         _cgi_path;
         std::string         _raw_response;
         char                **_env_execve;
-        int                 _resp_status;
 
         CGI(CGI const &a);
         CGI  &operator=(CGI const &a);
@@ -32,7 +32,8 @@ class CGI
         void    getServerName(const ServerConf &server);
         void    parentProc(int fds[2], pid_t pid);
         void    childProc(int fds[2]);
-        char        **buildEnvFromAttr();
+        void    parseRaw();
+        char    **buildEnvFromAttr();
 
     public :
         ~CGI();
@@ -45,6 +46,8 @@ class CGI
         void        forwardReq();
         void        setCGI(std::string cgiPath);
         const std::string   &getRawResp() const;
+        const std::string   &getBody() const;
+        const std::map<std::string, std::string> &getHeaders() const;
 };
 
 #endif

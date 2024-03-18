@@ -93,6 +93,7 @@ void    CGI::prepare(Request const &req,
 
     _request    = &req;
     _route      = &route;
+    _env.clear();
     getPathInfo();
     getQueryString();
     getContentLength();
@@ -182,6 +183,7 @@ void    CGI::parentProc(int fds[2], pid_t pid)
         _raw_response += c;
     } while (rd > 0);
     close(fds[0]);
+    parseRaw();
 }
 
 void    CGI::forwardReq()
@@ -189,6 +191,7 @@ void    CGI::forwardReq()
     int         fds[2];
     pid_t       pid;
 
+    _headers.clear();
     if (_env.size() == 0)
         throw std::runtime_error("Unprepared request.");
     if (pipe(fds) < 0)
@@ -203,7 +206,40 @@ void    CGI::forwardReq()
     _env.clear();
 }
 
+void    CGI::parseRaw()
+{
+    std::vector<std::string> out;
+    std::stringstream   ss(_raw_response);
+    std::string         line;
+
+    _body.clear();
+    _headers.clear();
+    while (getlineCRLF(ss, line))
+    {
+        if (line.length() == 0)
+            break;
+        split(line, out, ':');
+        if (out.size() != 2)
+            continue;
+        trimstr(out[0]); trimstr(out[1]);
+        _headers[out[0]] = out[1];
+        out.clear();
+    }
+    if (ss.tellg() != -1)
+        _body = ss.str().substr(ss.tellg());
+}
+
 const std::string   &CGI::getRawResp() const
 {
     return _raw_response;
+}
+
+const std::string   &CGI::getBody() const
+{
+    return _body;
+}
+
+const std::map<std::string, std::string> &CGI::getHeaders() const
+{
+    return _headers;
 }

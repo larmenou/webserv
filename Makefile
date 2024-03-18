@@ -43,14 +43,14 @@ all: 		$(NAME)
 $(NAME):	$(OBJ)
 				$(CXX) $(CXXFLAGS) $(INCS) $(OBJ) -o $(NAME)
 
-$(PARSER_TEST): $(OBJ)
+$(PARSER_TEST): $(OBJ) srcs/Config/test.cpp
 				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Config/test.cpp -o $@
 
-$(REQUEST_TEST): $(OBJ)
+$(REQUEST_TEST): $(OBJ) srcs/Request/test.cpp
 				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Request/test.cpp -o $@
 
 
-$(CGI_TEST): $(OBJ)
+$(CGI_TEST): $(OBJ) srcs/CGI/test.cpp
 				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/CGI/test.cpp -o $@
 
 
