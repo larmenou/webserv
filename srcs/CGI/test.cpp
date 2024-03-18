@@ -21,6 +21,9 @@ int main()
     Route r(conf.getServers()[0].findRouteFromURN(urn));
 
     cgi.setCGI("./cgi-bin/ubuntu_cgi_tester");
+
+    //###########
+
     cgi.prepare(req, r, conf.getServers()[0], "127.0.0.1");
     cgi.forwardReq();
     debug_header(cgi.getHeaders());
@@ -30,5 +33,8 @@ int main()
     cgi.prepare(req, r, conf.getServers()[0], "127.0.0.1");
     cgi.forwardReq();
     debug_header(cgi.getHeaders());
+
+    //###########
+
     std::cout << "Resp body :\n"<< cgi.getBody() << std::endl << std::endl;
 }

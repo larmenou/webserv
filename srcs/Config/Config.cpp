@@ -381,7 +381,7 @@ bool    Config::cgi_extension(std::vector<std::string> &dirs, Route &conf)
 {
     if (dirs.size() != 2)
         return false;
-    conf.setDirFile(dirs[1]);
+    conf.setCgiExtension(dirs[1]);
     return true;
 }
 

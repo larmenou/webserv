@@ -68,6 +68,15 @@ const std::string   Request::findHeader(std::string key) const
     return ite->second;
 }
 
+bool    Request::checkExtension(std::string extension) const
+{
+    size_t  id = _urn.find(extension);
+    if (id != std::string::npos && id == _urn.size() - extension.size())
+        return true;
+    return false;
+}
+
+
 
 static void getURNFromSS(std::stringstream &ss,
                     long        &method,

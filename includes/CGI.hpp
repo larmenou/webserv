@@ -16,6 +16,7 @@ class CGI
         const Route         *_route;
         std::map<std::string, std::string>  _env;
         std::map<std::string, std::string>  _headers;
+        int                                 _status;
         std::string         _body;
         std::string         _cgi_path;
         std::string         _raw_response;
@@ -48,6 +49,8 @@ class CGI
         const std::string   &getRawResp() const;
         const std::string   &getBody() const;
         const std::map<std::string, std::string> &getHeaders() const;
+        int   getStatus() const;
+        std::string         buildRawHeader() const;
 };
 
 #endif

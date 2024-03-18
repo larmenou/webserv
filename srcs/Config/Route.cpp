@@ -28,7 +28,7 @@ Route   &Route::operator=(Route const &a)
     _redir_code = a._redir_code;
     _dirListing = a._dirListing;
     _isDirFile = a._isDirFile;
-    _cgiFileExtension = a._acceptUploads;
+    _cgiFileExtension = a._cgiFileExtension;
     _fileSavePath = a._fileSavePath;
     _route = a._route;
     _acceptUploads = a._acceptUploads;
@@ -78,5 +78,7 @@ std::ostream    &operator<<(std::ostream &os, const Route &route)
     os << "\n\t- autoindex " << (route.isListingDirs() ? "on" : "off");
     if (route.isAcceptingUploads())
         os << "\n\t- accepting upload at " << route.getSavePath();
+    if (route.getCgiExtension().size() != 0)
+        os << "\n\t- CGI extension " << route.getCgiExtension();
     return os;
 }
