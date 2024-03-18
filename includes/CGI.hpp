@@ -31,6 +31,7 @@ class CGI
         void    getContentType();
         void    getRequestMethod();
         void    getServerName(const ServerConf &server);
+        void    getHeaders();
         void    parentProc(int fds[2], pid_t pid);
         void    childProc(int fds[2]);
         void    parseRaw();

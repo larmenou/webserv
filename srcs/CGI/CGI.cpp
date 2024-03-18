@@ -62,6 +62,29 @@ void    CGI::getServerName(const ServerConf &server)
     _env["SERVER_NAME"] = header_ite->second;
 }
 
+static std::string  addPrefixCapitalize(std::string key)
+{
+    std::string str("HTTP_");
+
+    for (size_t i = 0; i < key.size(); i++)
+    {
+        if (std::isalpha(key[i]))
+            str += std::toupper(key[i]);
+        else
+            str += "_";
+    }
+    return str;
+}
+
+void    CGI::getHeaders()
+{
+    for (std::map<std::string, std::string>::const_iterator ite = _request->getHeaders().begin();
+        ite != _request->getHeaders().end();
+        ite++)
+        _env[addPrefixCapitalize(ite->first)] = ite->second;
+}
+
+
 void    CGI::setCGI(std::string cgiPath)
 {
     _cgi_path = cgiPath;
@@ -101,6 +124,7 @@ void    CGI::prepare(Request const &req,
     getRequestMethod();
     getContentType();
     getServerName(server);
+    getHeaders();
     _env["REDIRECT_STATUS"] = "true";
     _env["GATEWAY_INTERFACE"] = "CGI/1.1";
     _env["SCRIPT_FILENAME"] = _env["PATH_INFO"];
