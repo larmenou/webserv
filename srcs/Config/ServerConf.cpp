@@ -11,6 +11,8 @@ ServerConf::ServerConf() : _listDir(true),
                         _port(-1),
                         _body_size_limit(1000000)
 {
+    _default_route.setRoot(_root);
+    _default_route.setRoute("/");
 }
 
 ServerConf::ServerConf(ServerConf const &a)
@@ -58,8 +60,6 @@ bool    ServerConf::hasServername(std::string name) const
 
 const Route &ServerConf::findRouteFromURN(std::string urn) const
 {
-    if (_routes.size() == 0)
-        throw std::runtime_error("No route");
     for (size_t i = 0; i < _routes.size(); i++)
     {
         const std::string &route = _routes[i].getRoute();
@@ -67,7 +67,7 @@ const Route &ServerConf::findRouteFromURN(std::string urn) const
         if (end == 0)
             return _routes[i];
     }
-    throw std::runtime_error("No route from URN");
+    return _default_route;
 }
 
 
