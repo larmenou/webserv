@@ -16,6 +16,7 @@ Config::Config(std::string config_path)
     routeUpdateFuncs["autoindex"] = &Config::autoindex;
     routeUpdateFuncs["index"] = &Config::dir_default;
     routeUpdateFuncs["cgi_extension"] = &Config::cgi_extension;
+    routeUpdateFuncs["uploads"] = &Config::save_path;
 
     str2permmap["GET"] = GET;
     str2permmap["POST"] = POST;
@@ -382,6 +383,15 @@ bool    Config::cgi_extension(std::vector<std::string> &dirs, Route &conf)
     if (dirs.size() != 2)
         return false;
     conf.setCgiExtension(dirs[1]);
+    return true;
+}
+
+bool    Config::save_path(std::vector<std::string> &dirs, Route &conf)
+{
+    if (dirs.size() != 2)
+        return false;
+    conf.setUpload(true);
+    conf.setSavePath(dirs[1]);
     return true;
 }
 

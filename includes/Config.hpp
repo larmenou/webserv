@@ -53,6 +53,7 @@ class   Config
         bool                autoindex(std::vector<std::string> &dirs, Route &conf);
         bool                dir_default(std::vector<std::string> &dirs, Route &conf);
         bool                cgi_extension(std::vector<std::string> &dirs, Route &conf);
+        bool                save_path(std::vector<std::string> &dirs, Route &conf);
 
         Config();
         Config(Config const &a);
