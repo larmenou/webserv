@@ -156,7 +156,9 @@ std::string  CGI::forwardReq()
     char        *av[] = {NULL, NULL};
     int         fds[2];
     pid_t       pid;
-
+    
+    if (_env.size() == 0)
+        throw std::runtime_error("Unprepared request.");
     if (pipe(fds) < 0)
         throw std::runtime_error("Could not open pipe.");
     pid = fork();

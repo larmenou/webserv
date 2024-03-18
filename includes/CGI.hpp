@@ -27,6 +27,7 @@ class CGI
         void getContentType();
         void getRequestMethod();
         void getServerName(const ServerConf &server);
+        char        **buildEnvFromAttr();
 
     public :
         ~CGI();
@@ -37,7 +38,6 @@ class CGI
                         ServerConf const &server,
                         std::string remoteaddr);
         std::string forwardReq();
-        char        **buildEnvFromAttr();
         void        setCGI(std::string cgiPath);
 };
 
