@@ -36,6 +36,11 @@ Route   &Route::operator=(Route const &a)
     return *this;
 }
 
+bool    Route::operator<(Route const &a) const
+{
+    return _route.length() < a._route.length();
+}
+
 Route::~Route()
 {
 }

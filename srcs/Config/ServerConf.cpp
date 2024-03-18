@@ -60,22 +60,20 @@ bool    ServerConf::hasServername(std::string name) const
 
 const Route &ServerConf::findRouteFromURN(std::string urn) const
 {
-    for (size_t i = 0; i < _routes.size(); i++)
+    std::set<Route>::const_reverse_iterator ite = _routes.rbegin();
+    for (; ite != _routes.rend(); ite++)
     {
-        const std::string &route = _routes[i].getRoute();
-
-        std::cout << route << std::endl;
-
+        const std::string &route = ite->getRoute();
         size_t end = urn.find(route, 0);
         if (end == 0)
-            return _routes[i];
+            return *ite;
     }
     return _default_route;
 }
 
 
 void    ServerConf::setIP(std::string ip) { _ip = ip;}
-void    ServerConf::setRoutes(std::vector<Route> &routes) { _routes = routes; }
+void    ServerConf::setRoutes(std::set<Route> &routes) { _routes = routes; }
 void    ServerConf::setPort(int port) {
     if (_port == -1)
         _port = port;

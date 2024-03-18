@@ -34,6 +34,7 @@ class Route
         Route(Route const &a);
         ~Route();
         Route &operator=(Route const &a);
+        bool operator<(Route const &a) const;
 
         const std::string   &getRoute() const;
         const std::string   &getRoot() const;
