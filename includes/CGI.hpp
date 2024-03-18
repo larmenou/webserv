@@ -16,6 +16,7 @@ class CGI
         const Route         *_route;
         std::string         _cgi_path;
         std::map<std::string, std::string>  _env;
+        char                **_env_execve;
 
         CGI(CGI const &a);
         CGI  &operator=(CGI const &a);
