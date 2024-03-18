@@ -14,6 +14,7 @@ class ServerConf
         bool                        _listDir;
         std::vector<std::string>    _servernames;
         std::vector<Route>          _routes;
+        Route                       _default_route;
         std::map<unsigned int, std::string> _error_pages;
         std::string                 _root;
         std::string                 _ip;

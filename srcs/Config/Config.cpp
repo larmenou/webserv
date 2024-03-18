@@ -2,7 +2,7 @@
 
 std::map<std::string, long> Config::str2permmap;
 
-Config::Config()
+Config::Config(std::string config_path)
 {
     serverUpdateFuncs["listen"] = &Config::listen;
     serverUpdateFuncs["server_name"] = &Config::server_name;
@@ -26,6 +26,8 @@ Config::Config()
     str2permmap["DELETE"] = DELETE;
     str2permmap["PATCH"] = PATCH;
     str2permmap["TRACE"] = TRACE;
+
+    initConfig(config_path);
 }
 
 Config::~Config()
@@ -108,19 +110,23 @@ static void determineBracketBounds(std::string &str,
 
 void    Config::parse()
 {
-    std::size_t server_idx;
+    size_t server_idx;
     size_t left = 0, right;
 
     while (true)
     {
-        server_idx = _file.find("server", left);
+        server_idx = _file.find_first_not_of(SPACES, left);
         if (server_idx == std::string::npos)
             break;
+        if (_file.substr(server_idx, 6).compare("server") != 0)
+            throw std::runtime_error("Found unknown directive.");
         server_idx += 6;
         determineBracketBounds(_file, server_idx, left, right, '{', '}');
         parseServer(left, right);
         left = right + 1;
     }
+    if (_servers.size() == 0)
+        throw std::runtime_error("No server found in config file.");
 }
 
 static void extractParameters(std::string &config, std::vector<std::string> &parameters)
@@ -379,10 +385,10 @@ bool    Config::cgi_extension(std::vector<std::string> &dirs, Route &conf)
     return true;
 }
 
-const ServerConf    &Config::getServerFromHostAndIP(std::string &host, std::string &ip)
+const ServerConf    &Config::getServerFromHostAndIP(std::string host, std::string ip)
 {
     bool        foundIP;
-    size_t      server_idx;
+    size_t      server_idx = 0;
 
     foundIP = false;
     for (size_t i = 0; i < _servers.size(); i++)
@@ -398,7 +404,7 @@ const ServerConf    &Config::getServerFromHostAndIP(std::string &host, std::stri
                 return _servers[i];
         }
     }
-    if (foundIP == false)
+    if (foundIP == false && host != "")
         throw std::runtime_error("IP not found.");
     return _servers[server_idx];
 }

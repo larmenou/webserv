@@ -43,15 +43,15 @@ all: 		$(NAME)
 $(NAME):	$(OBJ)
 				$(CXX) $(CXXFLAGS) $(INCS) $(OBJ) -o $(NAME)
 
-$(PARSER_TEST): $(OBJ) srcs/Config/test.o
-				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Config/test.o -o $@
+$(PARSER_TEST): $(OBJ) srcs/Config/test.cpp
+				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Config/test.cpp -o $@
 
-$(REQUEST_TEST): $(OBJ) srcs/Request/test.o
-				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Request/test.o -o $@
+$(REQUEST_TEST): $(OBJ) srcs/Request/test.cpp
+				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Request/test.cpp -o $@
 
 
-$(CGI_TEST): $(OBJ) srcs/CGI/test.o
-				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/CGI/test.o -o $@
+$(CGI_TEST): $(OBJ) srcs/CGI/test.cpp
+				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/CGI/test.cpp -o $@
 
 
 clean:

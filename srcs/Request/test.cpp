@@ -3,7 +3,7 @@
 int main()
 {
     std::string str("POST /salut?ha=hello&test=test&ok&&&hello=aa HTTP/1.1\r\nTest-header : header\r\nCookie: oui\r\n\r\nBODY");
-    Config conf;
+    Config conf("./test_configs/cgi.conf");
     Request req(str);
     std::cout << req;
 }
