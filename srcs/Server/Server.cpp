@@ -6,32 +6,36 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/15 10:44:10 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/18 14:14:24 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "RegisteredUsers.hpp"
 
-Server::Server(std::string ip_address, int port, Route route, std::vector<ServerConf> servers) : _ip_address(ip_address), _port(port), _socket_listen(), _fds(), _socketAddress(), _socketAddress_len(sizeof(_socketAddress)), _body_response()
+Server::Server(std::vector<ServerConf> servers) : _servers(servers), _sockets_listen(), _socketAddresses(), _header_response(), _body_response()
 {
-	_socketAddress.sin_family = AF_INET;
-	_socketAddress.sin_port = htons(_port);
-	_socketAddress.sin_addr.s_addr = INADDR_ANY;
+	struct sockaddr_in socketAddress;
 
 	_status_code.insert(std::pair<int, std::string>(200, "OK"));
 	_status_code.insert(std::pair<int, std::string>(201, "Created"));
+	_status_code.insert(std::pair<int, std::string>(301, "Moved Permanently"));
 	_status_code.insert(std::pair<int, std::string>(401, "Unauthorized"));
 	_status_code.insert(std::pair<int, std::string>(404, "Not Found"));
-
-	_route = route;
-	_servers = servers;
-	//_default_dir = _servers;
-
-	if (startServer() != 0)
+	_status_code.insert(std::pair<int, std::string>(413, "Payload Too Large"));
+	
+	for (unsigned int i = 0; i < servers.size(); i++)
 	{
-		std::cout << "Failed to start server with PORT: " << ntohs(_socketAddress.sin_port) << std::endl;
-		exit(1);
+		socketAddress.sin_family = AF_INET;
+		socketAddress.sin_port = htons(_servers[i].getPort());
+		socketAddress.sin_addr.s_addr = INADDR_ANY;
+		_socketAddresses.push_back(socketAddress);
+
+		if (startServer(i) != 0)
+		{
+			std::cout << "Failed to start server with PORT: " << ntohs(_socketAddresses[i].sin_port) << std::endl;
+			exit(1);
+		}
 	}
 }
 
@@ -40,112 +44,104 @@ Server::~Server()
 	closeServer();
 }
 
-int Server::startServer()
+int Server::startServer(int i)
 {
-	_socket_listen = socket(AF_INET, SOCK_STREAM, 0);
-	if (_socket_listen < 0)
+	int socket_listen = socket(AF_INET, SOCK_STREAM, 0);
+	if (socket_listen < 0)
 	{
 		std::cout << "Cannot create socket" << std::endl;
 		return (1);
 	}
-	if (bind(_socket_listen, (sockaddr *)&_socketAddress, _socketAddress_len) < 0)
+	if (bind(socket_listen, (sockaddr *)&_socketAddresses[i], sizeof(_socketAddresses[i])) < 0)
 	{
 		std::cout << "Cannot connect socket to address" << std::endl;
 		return (1);
 	}
-	
-	return (0);
-}
-
-void Server::closeServer()
-{
-	close(_socket_listen);
-	exit(0);
-}
-
-void Server::startListen()
-{
-	int bytesReceived;
-	int	nfds;
-	int ready;
-	int client_fd;
-	char buffer[BUFF_SIZE];
-	RegisteredUsers users;
-	
-	if (listen(_socket_listen, 20) < 0)
+	if (listen(socket_listen, 20) < 0)
 	{
 		std::cout << "Socket listen failed" << std::endl;
 		exit(1);
 	}
 
-	std::cout << "\n*** Listening on ADDRESS: " << _ip_address << " PORT: " << ntohs(_socketAddress.sin_port) << " ***\n\n";
+	std::cout << "\n*** Listening on ADDRESS: " << _servers[i].getIP() << " PORT: " << _servers[i].getPort() << " ***\n\n";
+	
+	_sockets_listen.push_back(socket_listen);
+	return (0);
+}
 
-	_fds[0].fd = _socket_listen;
-	_fds[0].events = POLLIN;
-	nfds = 1;
+void Server::closeServer()
+{
+	for (unsigned int i = 0; i < _sockets_listen.size(); i++)
+		close(_sockets_listen[i]);
+}
+
+void Server::loop()
+{
+	int bytesReceived;
+	int ready;
+	int client_fd;
+	char buffer[BUFF_SIZE];
+	RegisteredUsers users;
+	
+	std::vector<pollfd> pollfds;
+	
+    for (unsigned int i = 0; i < _sockets_listen.size(); i++)
+	{
+        pollfd pfd;
+        pfd.fd = _sockets_listen[i];
+        pfd.events = POLLIN;
+        pollfds.push_back(pfd);
+    }
 	
 	while (true)
 	{
 		std::cout << "====== Waiting for a new connection ======\n\n\n";
 
-		ready = poll(_fds, nfds, -1);
+		ready = poll(pollfds.data(), pollfds.size(), -1);
 		if (ready == -1)
 		{
 			std::cout << "Poll failed." << std::endl;
 			break ;
 		}
 
-		for (int i = 0; i < nfds; i++)
+		for (unsigned int i = 0; i < pollfds.size(); i++)
 		{
-			if (_fds[i].revents & POLLIN)
+			if (pollfds[i].revents & POLLIN)
 			{
-				if (_fds[i].fd == _socket_listen)
-				{
-					acceptConnection(client_fd);
-					_fds[nfds].fd = client_fd;
-					_fds[nfds].events = POLLIN;
-					nfds++;
-				}
+					acceptConnection(client_fd, i);
 			}
-			else
+			bytesReceived = read(client_fd, buffer, BUFF_SIZE - 1);
+			if (bytesReceived > 0)
 			{
-				bytesReceived = read(_fds[i].fd, buffer, BUFF_SIZE - 1);
-				if (bytesReceived > 0)
+				buffer[bytesReceived] = '\0';
+				std::cout << "------ Received Request from client ------\n\n";
+
+				std::cout << buffer << std::endl;
+
+				std::stringstream ss(buffer);
+				std::string str = ss.str();
+				Request req(str);
+
+				//std::cout << req << std::endl;
+				
+				if (req.getBody().length() != 0)
 				{
-					buffer[bytesReceived] = '\0';
-					std::cout << "------ Received Request from client ------\n\n";
-
-					std::cout << buffer << std::endl;
-
-					std::stringstream ss(buffer);
-					std::string str = ss.str();
-					Request req(str);
-
-					std::cout << req << std::endl;
-
-					if (req.getBody().length() != 0)
-					{
-						std::string str = req.getBody();
-						users.addDb(str);
-					}
-
-					buildResponse(req);
-					
-					sendResponse(i);
+					std::string str = req.getBody();
+					users.addDb(str);
 				}
-				close(_fds[i].fd);
-				nfds--;
-				i--;
+
+				buildResponse(req, i, client_fd);
 			}
+			close(client_fd);
 		}
 	}
 }
 
-void Server::acceptConnection(int &new_socket)
+void Server::acceptConnection(int &new_socket, int i)
 {
 	sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
-	new_socket = accept(_socket_listen, (sockaddr *)&client_addr, &client_len);
+	new_socket = accept(_sockets_listen[i], (sockaddr *)&client_addr, &client_len);
 	if (new_socket < 0)
 	{
 		std::cout << "Server failed to accept incoming connection" << std::endl;
@@ -153,37 +149,54 @@ void Server::acceptConnection(int &new_socket)
 	}
 }
 
-void Server::buildResponse(Request req)
+void Server::buildResponse(Request req, int i, int client_fd)
 {
 	std::stringstream http;
 	std::string filename;
 	int fd;
 	int status = 200;
+	const Route &route = _servers[i].findRouteFromURN(req.getURN());
 
 	_body_response.clear();
 
 	if (req.getURN() != "/favicon.ico")
 	{
-		filename = "./html";
-		filename += req.getURN();
-		
-		if (filename == "./html/")
-			filename += "index.html";
-
-		fd = open(filename.c_str(), O_RDONLY);
-		if (fd == -1)
+		if (req.getURN() == "/redirect")
 		{
-			fd = open("./html/404error.html", O_RDONLY);
-			status = 404;
+			status = 301;
+			std::cout << route.getRewrite().second << std::endl;
+			http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nLocation: " << route.getRewrite().second << "\r\nContent-Length: 0\r\n";
+			_header_response = http.str();
+			
+			send(client_fd, _header_response.c_str(), _header_response.size(), 0);
+			return ;
 		}
+		else
+		{
+			filename = route.getRoot();
+			filename += req.getURN();
+			
+			if (filename == route.getRoot() + "/")
+				filename += route.getDirFile();
 
-		char c;
-		while (read(fd, &c, 1) > 0)
-			_body_response += c;
+			fd = open(filename.c_str(), O_RDONLY);
+			if (fd == -1)
+			{
+				if (_servers[i].getErrorPage(404).size() > 0)
+				{
+					fd = open("./html/404error.html", O_RDONLY);
+					status = 404;
+				}
+			}
+
+			char c;
+			while (read(fd, &c, 1) > 0)
+				_body_response += c;
+			
+			http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 		
-		http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-	
-		close(fd);
+			close(fd);
+		}
 	}
 	
 	if (req.getHeaders().find("Connection")->second == " keep-alive")
@@ -199,11 +212,13 @@ void Server::buildResponse(Request req)
 	
 	http.clear();
 	http.str("");
+
+	sendResponse(client_fd);
 }
 
-void Server::sendResponse(int i)
+void Server::sendResponse(int client_fd)
 {
-	send(_fds[i].fd, _header_response.c_str(), _header_response.size(), 0);
-	send(_fds[i].fd, _body_response.c_str(), _body_response.size(), 0);
+	send(client_fd, _header_response.c_str(), _header_response.size(), 0);
+	send(client_fd, _body_response.c_str(), _body_response.size(), 0);
 	std::cout << "------ Server Response sent to client ------\n\n";
 }
