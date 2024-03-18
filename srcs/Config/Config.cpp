@@ -172,7 +172,7 @@ void    Config::parseLocation(std::string &substr, size_t left, size_t right, Ro
 void  Config::extractLocations(std::string &substr, ServerConf &conf)
 {
     std::size_t         location_idx;
-    std::vector<Route>  locations;
+    std::set<Route>     locations;
     size_t              left = 0, right;
     std::string         route_str;
     Route               route;
@@ -191,7 +191,7 @@ void  Config::extractLocations(std::string &substr, ServerConf &conf)
         route.setRoute(route_str);
         if (DEBUG)
             std::cout << "[LOG] Adding " << route << std::endl;
-        locations.push_back(route);
+        locations.insert(route);
         route = Route();
         substr.erase(location_idx, right - location_idx);
     }

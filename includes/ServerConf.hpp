@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <set>
 #include <map>
 #include <algorithm>
 
@@ -13,7 +14,7 @@ class ServerConf
     private :
         bool                        _listDir;
         std::vector<std::string>    _servernames;
-        std::vector<Route>          _routes;
+        std::set<Route>             _routes;
         Route                       _default_route;
         std::map<unsigned int, std::string> _error_pages;
         std::string                 _root;
@@ -38,7 +39,7 @@ class ServerConf
         const Route &findRouteFromURN(std::string urn) const;
 
         void        setIP(std::string ip);
-        void        setRoutes(std::vector<Route> &routes);
+        void        setRoutes(std::set<Route> &routes);
         void        setPort(int port);
         void        setBodySizeLimit(size_t size);
         void        addServerName(std::string name);
