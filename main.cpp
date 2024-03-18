@@ -6,7 +6,7 @@
 /*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:29:40 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/15 12:15:02 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/18 13:28:05 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,8 +32,8 @@ int main (int ac, char **av)
 			std::cout << servers[i] << std::endl;
 		}
 
-		Server s = Server(server.getIP(), server.getPort());
-		s.startListen();
+		Server s = Server(servers);
+		s.loop();
 	} catch (std::exception &e)
 	{
 		std::cerr << "Error : " << e.what() << std::endl;
