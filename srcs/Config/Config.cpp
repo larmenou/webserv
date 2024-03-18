@@ -110,19 +110,23 @@ static void determineBracketBounds(std::string &str,
 
 void    Config::parse()
 {
-    std::size_t server_idx;
+    size_t server_idx;
     size_t left = 0, right;
 
     while (true)
     {
-        server_idx = _file.find("server", left);
+        server_idx = _file.find_first_not_of(SPACES, left);
         if (server_idx == std::string::npos)
             break;
+        if (_file.substr(server_idx, 6).compare("server") != 0)
+            throw std::runtime_error("Found unknown directive.");
         server_idx += 6;
         determineBracketBounds(_file, server_idx, left, right, '{', '}');
         parseServer(left, right);
         left = right + 1;
     }
+    if (_servers.size() == 0)
+        throw std::runtime_error("No server found in config file.");
 }
 
 static void extractParameters(std::string &config, std::vector<std::string> &parameters)
