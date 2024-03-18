@@ -8,8 +8,8 @@ Route::Route() :
                     _redir_code(-1),
                     _dirListing(false),
                     _isDirFile(),
-                    _cgiFileExtension(),
-                    _acceptUploads(),
+                    _cgiFileExtension(""),
+                    _acceptUploads(false),
                     _fileSavePath()
 {
 
