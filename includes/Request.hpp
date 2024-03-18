@@ -37,6 +37,8 @@ class Request
         const std::string   findHeader(std::string key) const;
         const std::map<std::string, std::string>  &getHeaders() const;
         const std::map<std::string, std::string>  &getURLParams() const;
+
+        bool    checkExtension(std::string extension) const;
 };
 
 std::ostream    &operator<<(std::ostream &os, const Request &req);

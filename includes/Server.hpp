@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/18 13:53:59 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/18 14:35:02 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,7 @@ class Server
 		std::string 				_header_response;
 		std::string 				_body_response;
 		std::map<int, std::string>	_status_code;
+		const std::string			_default_root;
 
 		int startServer(int i);
 		void closeServer();

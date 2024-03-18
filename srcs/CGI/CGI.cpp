@@ -93,6 +93,7 @@ void    CGI::prepare(Request const &req,
 
     _request    = &req;
     _route      = &route;
+    _status     = 200;
     _env.clear();
     getPathInfo();
     getQueryString();
@@ -225,8 +226,20 @@ void    CGI::parseRaw()
         _headers[out[0]] = out[1];
         out.clear();
     }
+    std::map<std::string, std::string>::const_iterator ite = _headers.find("Status");
+    if (ite != _headers.end())
+    {
+        _status = std::strtol(ite->second.c_str(), NULL, 10);
+        _headers.erase(ite->first);
+    }
     if (ss.tellg() != -1)
         _body = ss.str().substr(ss.tellg());
+    
+}
+
+int CGI::getStatus() const
+{
+    return _status;
 }
 
 const std::string   &CGI::getRawResp() const
@@ -238,6 +251,24 @@ const std::string   &CGI::getBody() const
 {
     return _body;
 }
+
+std::string         CGI::buildRawHeader() const
+{
+    std::map<std::string, std::string>::const_iterator ite = _headers.begin();
+    std::string ret;
+
+    for (;ite != _headers.end(); ite++)
+    {
+        ret += ite->first;
+        ret += ": ";
+        ret += ite->second;
+        if (++ite != _headers.end())
+            ret += "\r\n";
+        ite--;
+    }
+    return ret;
+}
+
 
 const std::map<std::string, std::string> &CGI::getHeaders() const
 {
