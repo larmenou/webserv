@@ -12,9 +12,11 @@ int main()
     Route r(conf.getServers()[0].findRouteFromURN(urn));
     cgi.setCGI("/usr/bin/php-cgi");
     cgi.prepare(req, r, conf.getServers()[0], "127.0.0.1");
-    std::cout << "Result :\n"<< cgi.forwardReq() << std::endl;
+    cgi.forwardReq();
+    std::cout << "Result :\n"<< cgi.getRawResp() << std::endl;
 
     cgi.setCGI("./cgi-bin/ubuntu_cgi_tester");
     cgi.prepare(req, r, conf.getServers()[0], "127.0.0.1");
-    std::cout << "Result :\n"<< cgi.forwardReq() << std::endl;
+    cgi.forwardReq();
+    std::cout << "Result :\n"<< cgi.getRawResp() << std::endl;
 }

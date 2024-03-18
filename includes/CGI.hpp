@@ -14,19 +14,24 @@ class CGI
     private :
         const Request       *_request;
         const Route         *_route;
-        std::string         _cgi_path;
         std::map<std::string, std::string>  _env;
+        std::map<std::string, std::string>  _headers;
+        std::string         _cgi_path;
+        std::string         _raw_response;
         char                **_env_execve;
+        int                 _resp_status;
 
         CGI(CGI const &a);
         CGI  &operator=(CGI const &a);
 
-        void getPathInfo();
-        void getQueryString();
-        void getContentLength();
-        void getContentType();
-        void getRequestMethod();
-        void getServerName(const ServerConf &server);
+        void    getPathInfo();
+        void    getQueryString();
+        void    getContentLength();
+        void    getContentType();
+        void    getRequestMethod();
+        void    getServerName(const ServerConf &server);
+        void    parentProc(int fds[2], pid_t pid);
+        void    childProc(int fds[2]);
         char        **buildEnvFromAttr();
 
     public :
@@ -37,8 +42,9 @@ class CGI
                         Route const &route,
                         ServerConf const &server,
                         std::string remoteaddr);
-        std::string forwardReq();
+        void        forwardReq();
         void        setCGI(std::string cgiPath);
+        const std::string   &getRawResp() const;
 };
 
 #endif

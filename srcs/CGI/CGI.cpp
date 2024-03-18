@@ -150,13 +150,45 @@ char    **CGI::buildEnvFromAttr()
     return ret;
 }
 
-std::string  CGI::forwardReq()
+void    CGI::childProc(int fds[2])
 {
-    std::string result;
     char        *av[] = {NULL, NULL};
+
+    dup2(fds[1], STDOUT_FILENO);
+    dup2(fds[0], STDIN_FILENO);
+    close(fds[0]);
+    close(fds[1]);
+    _env_execve = buildEnvFromAttr();
+    execve(_cgi_path.c_str(), av, _env_execve);
+    exit(1);
+}
+
+void    CGI::parentProc(int fds[2], pid_t pid)
+{
+    int     s;
+    char    c;
+    ssize_t rd;
+
+    _raw_response.clear();
+    if (_env["REQUEST_METHOD"] == "POST")
+        write(fds[1], _request->getBody().c_str(), _request->getBody().length());
+    close(fds[1]);
+    if (waitpid(pid, &s, WUNTRACED) < 0)
+        throw std::runtime_error("Serverside error");
+    do{
+        rd = read(fds[0], &c, 1);
+        if (rd < 0)
+            throw std::runtime_error("Error while reading output of CGI.");
+        _raw_response += c;
+    } while (rd > 0);
+    close(fds[0]);
+}
+
+void    CGI::forwardReq()
+{
     int         fds[2];
     pid_t       pid;
-    
+
     if (_env.size() == 0)
         throw std::runtime_error("Unprepared request.");
     if (pipe(fds) < 0)
@@ -165,34 +197,13 @@ std::string  CGI::forwardReq()
     if (pid == -1)
         throw std::runtime_error("Could not fork.");
     if (pid == 0)
-    {
-        dup2(fds[1], STDOUT_FILENO);
-        dup2(fds[0], STDIN_FILENO);
-        close(fds[0]);
-        close(fds[1]);
-        _env_execve = buildEnvFromAttr();
-        execve(_cgi_path.c_str(), av, _env_execve);
-        exit(1);
-    }
+        childProc(fds);
     else
-    {
-        int     s;
-        char    c;
-        ssize_t rd;
-
-        if (_env["REQUEST_METHOD"] == "POST")
-            write(fds[1], _request->getBody().c_str(), _request->getBody().length());
-        close(fds[1]);
-        if (waitpid(pid, &s, WUNTRACED) < 0)
-            throw std::runtime_error("Serverside error");
-        do{
-            rd = read(fds[0], &c, 1);
-            if (rd < 0)
-                throw std::runtime_error("Error while reading output of CGI.");
-            result += c;
-        } while (rd > 0);
-        close(fds[0]);
-    }
+        parentProc(fds, pid);
     _env.clear();
-    return result;
+}
+
+const std::string   &CGI::getRawResp() const
+{
+    return _raw_response;
 }
