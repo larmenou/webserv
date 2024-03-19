@@ -17,6 +17,7 @@
 #include <vector>
 #include <poll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>

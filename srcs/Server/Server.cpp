@@ -162,6 +162,15 @@ void Server::acceptConnection(int &new_socket, int i)
 	}
 }
 
+static bool	isDir(std::string path)
+{
+	struct stat	s;
+
+	if (stat(path.c_str(), &s) == -1)
+		return false;
+	return (s.st_mode & S_IFMT) == S_IFDIR;
+}
+
 void Server::buildResponse(Request req, int i, int client_fd)
 {
 	std::stringstream http;
@@ -213,17 +222,22 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		}
 		else
 		{
-			fd = open(filename.c_str(), O_RDONLY);
-			if (fd == -1)
+			if (isDir(filename) && route.isListingDirs())
+				_body_response = DirLister().generate_body(filename, req);
+			else
 			{
-				fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
-				status = 404;
-			}
+				fd = open(filename.c_str(), O_RDONLY);
+				if (fd == -1)
+				{
+					fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
+					status = 404;
+				}
 
-			char c;
-			while (read(fd, &c, 1) > 0)
-				_body_response += c;
-			close(fd);
+				char c;
+				while (read(fd, &c, 1) > 0)
+					_body_response += c;
+				close(fd);
+			}
 		}
 		http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	}
