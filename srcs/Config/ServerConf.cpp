@@ -63,7 +63,8 @@ const Route &ServerConf::findRouteFromURN(std::string urn) const
     std::set<Route>::const_reverse_iterator ite = _routes.rbegin();
     for (; ite != _routes.rend(); ite++)
     {
-        const std::string &route = ite->getRoute();
+        const std::string &route = _routes[i].getRoute();
+
         size_t end = urn.find(route, 0);
         if (end == 0)
             return *ite;
