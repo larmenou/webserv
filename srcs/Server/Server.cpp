@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/19 08:09:34 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/19 13:27:12 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@ Server::Server(std::vector<ServerConf> servers) : _servers(servers), _sockets_li
 	_status_code.insert(std::pair<int, std::string>(401, "Unauthorized"));
 	_status_code.insert(std::pair<int, std::string>(404, "Not Found"));
 	_status_code.insert(std::pair<int, std::string>(413, "Payload Too Large"));
-	
+
 	for (unsigned int i = 0; i < servers.size(); i++)
 	{
 		socketAddress.sin_family = AF_INET;
@@ -48,6 +48,11 @@ Server::~Server()
 int Server::startServer(int i)
 {
 	int socket_listen = socket(AF_INET, SOCK_STREAM, 0);
+	int enable = 1;
+	
+	if (setsockopt(socket_listen, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+		std::cerr << "Error setting SO_REUSEADDR" << std::endl;
+	}
 	if (socket_listen < 0)
 	{
 		std::cout << "Cannot create socket" << std::endl;
@@ -109,29 +114,38 @@ void Server::loop()
 		{
 			if (pollfds[i].revents & POLLIN)
 			{
-					acceptConnection(client_fd, i);
-			}
-			bytesReceived = read(client_fd, buffer, BUFF_SIZE - 1);
-			if (bytesReceived > 0)
-			{
-				buffer[bytesReceived] = '\0';
-				std::cout << "------ Received Request from client ------\n\n";
-
-				std::cout << buffer << std::endl;
-
-				std::stringstream ss(buffer);
-				std::string str = ss.str();
-				Request req(str);
-				
-				if (req.getBody().length() != 0)
+				acceptConnection(client_fd, i);
+				if (client_fd != -1)
 				{
-					std::string str = req.getBody();
-					users.addDb(str);
-				}
+					pollfd new_pollfd;
+					new_pollfd.fd = client_fd;
+					new_pollfd.events = POLLIN;
+					pollfds.insert(pollfds.begin() + i + 1, new_pollfd);
+					
+					bytesReceived = read(client_fd, buffer, BUFF_SIZE - 1);
+					if (bytesReceived > 0)
+					{
+						buffer[bytesReceived] = '\0';
+						std::cout << "------ Received Request from client ------\n\n";
 
-				buildResponse(req, i, client_fd);
+						std::cout << buffer << std::endl;
+
+						std::stringstream ss(buffer);
+						std::string str = ss.str();
+						Request req(str);
+						
+						if (req.getBody().length() != 0)
+						{
+							std::string str = req.getBody();
+							users.addDb(str);
+						}
+
+						buildResponse(req, i, client_fd);
+					}
+					close(client_fd);
+					pollfds.erase(pollfds.begin() + i + 1);
+				}
 			}
-			close(client_fd);
 		}
 	}
 }
@@ -156,8 +170,6 @@ void Server::buildResponse(Request req, int i, int client_fd)
 	int fd;
 	int status = 200;
 	const Route &route = _servers[i].findRouteFromURN(req.getURN());
-
-	std::cout << route << std::endl;
 
 	_body_response.clear();
 
