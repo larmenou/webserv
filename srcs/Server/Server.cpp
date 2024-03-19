@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/18 17:09:27 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/19 08:09:34 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -163,7 +163,14 @@ void Server::buildResponse(Request req, int i, int client_fd)
 
 	if (req.getURN() != "/favicon.ico")
 	{
-		if (req.getURN() == "/redirect")
+		if (route.getRoot().size() > 0)
+		{
+			filename = route.getRoot();
+			filename += req.getURN().substr(route.getRoute().length() - 1);
+			if (filename == route.getRoot() + "/")
+				filename += route.getDirFile();
+		}
+		else if (route.getRewrite().second.size() > 0)
 		{
 			status = 301;
 			http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nLocation: " << route.getRewrite().second << "\r\nContent-Length: 0\r\n";
@@ -174,51 +181,39 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		}
 		else
 		{
-			if (route.getRoot().size() > 0)
-			{
-				filename = route.getRoot();
-				filename += req.getURN().substr(route.getRoute().length() - 1);
-				if (filename == route.getRoot() + "/")
-					filename += route.getDirFile();
-			}
-			else
-			{
-				filename = _default_root;
-				filename += req.getURN();
-				if (filename == _default_root + "/")
-					filename += "index.html";
-			}
-
-			std::cout << filename << std::endl;
-
-			if (req.checkExtension(route.getCgiExtension()))
-			{
-				CGI cgi;
-
-				std::cout << "Send to CGI" << std::endl;
-				cgi.setCGI("/usr/bin/php-cgi");
-				cgi.prepare(req,route,_servers[i],"127.0.0.1");
-				cgi.forwardReq();
-				_body_response = cgi.getBody();
-				status = cgi.getStatus();
-				headers = cgi.buildRawHeader();
-			}
-			else
-			{
-				fd = open(filename.c_str(), O_RDONLY);
-				if (fd == -1)
-				{
-					fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
-					status = 404;
-				}
-
-				char c;
-				while (read(fd, &c, 1) > 0)
-					_body_response += c;
-				close(fd);
-			}
-			http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+			filename = _default_root;
+			filename += req.getURN();
+			if (filename == _default_root + "/")
+				filename += "index.html";
 		}
+
+		if (req.checkExtension(route.getCgiExtension()))
+		{
+			CGI cgi;
+
+			std::cout << "Send to CGI" << std::endl;
+			cgi.setCGI("/usr/bin/php-cgi");
+			cgi.prepare(req,route,_servers[i],"127.0.0.1");
+			cgi.forwardReq();
+			_body_response = cgi.getBody();
+			status = cgi.getStatus();
+			headers = cgi.buildRawHeader();
+		}
+		else
+		{
+			fd = open(filename.c_str(), O_RDONLY);
+			if (fd == -1)
+			{
+				fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
+				status = 404;
+			}
+
+			char c;
+			while (read(fd, &c, 1) > 0)
+				_body_response += c;
+			close(fd);
+		}
+		http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	}
 	
 	if (req.getHeaders().find("Connection")->second == " keep-alive")

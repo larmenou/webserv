@@ -64,8 +64,6 @@ const Route &ServerConf::findRouteFromURN(std::string urn) const
     {
         const std::string &route = _routes[i].getRoute();
 
-        std::cout << route << std::endl;
-
         size_t end = urn.find(route, 0);
         if (end == 0)
             return _routes[i];
