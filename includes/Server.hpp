@@ -25,6 +25,7 @@
 #include <fcntl.h>
 
 #include "Request.hpp"
+#include "DirLister.hpp"
 
 #define BUFF_SIZE 30720
 #define MAX_EVENTS 20

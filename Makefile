@@ -8,6 +8,7 @@ NAME		:=	webserv
 PARSER_TEST	:= parser-test
 REQUEST_TEST := req
 CGI_TEST	:= cgi
+LS_TEST		:= ls
 
 SRCS_F		:= 	main
 
@@ -28,6 +29,7 @@ SRCS_F		+= $(addprefix $(SRCS_DIR)/Request/, \
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Server/, \
 					Server \
 					RegisteredUsers \
+					DirLister \
 					)
 
 SRCS		:=	$(addsuffix .cpp, $(SRCS_F))
@@ -49,6 +51,8 @@ $(PARSER_TEST): $(OBJ) srcs/Config/test.cpp
 $(REQUEST_TEST): $(OBJ) srcs/Request/test.cpp
 				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Request/test.cpp -o $@
 
+$(LS_TEST): $(OBJ) srcs/Server/test.cpp
+				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Server/test.cpp -o $@
 
 $(CGI_TEST): $(OBJ) srcs/CGI/test.cpp
 				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/CGI/test.cpp -o $@
@@ -58,10 +62,7 @@ clean:
 				@rm -f $(OBJ)
 
 fclean:		clean
-				@rm -f $(NAME)
-				@rm -f $(PARSER_TEST)
-				@rm -f $(CGI_TEST)
-				@rm -f $(REQUEST_TEST)
+				@rm -f $(NAME) $(PARSER_TEST) $(CGI_TEST) $(REQUEST_TEST) $(LS_TEST)
 
 re:			fclean all
 
