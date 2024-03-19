@@ -193,20 +193,20 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		}
 		else if (route.getRewrite().second.size() > 0)
 		{
-			status = 301;
+			status = route.getRedirCode();
 			http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nLocation: " << route.getRewrite().second << "\r\nContent-Length: 0\r\n";
 			_header_response = http.str();
 			
 			send(client_fd, _header_response.c_str(), _header_response.size(), 0);
 			return ;
 		}
-		else
+		/*else
 		{
 			filename = _default_root;
 			filename += req.getURN();
 			if (filename == _default_root + "/")
 				filename += "index.html";
-		}
+		}*/
 
 		if (req.checkExtension(route.getCgiExtension()))
 		{

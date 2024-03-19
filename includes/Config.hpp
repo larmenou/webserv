@@ -46,6 +46,8 @@ class   Config
         bool                error_page(std::vector<std::string> &dirs, ServerConf &conf);
         bool                client_max_body_size(std::vector<std::string> &dirs, ServerConf &conf);
         bool                server_root(std::vector<std::string> &dirs, ServerConf &conf);
+        bool                server_index(std::vector<std::string> &dirs, ServerConf &conf);
+        bool                server_autoindex(std::vector<std::string> &dirs, ServerConf &conf);
 
         bool                root(std::vector<std::string> &dirs, Route &conf);
         bool                rewrite(std::vector<std::string> &dirs, Route &conf);

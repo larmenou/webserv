@@ -34,6 +34,7 @@ class ServerConf
         const std::vector<std::string>  &getNames() const;
         const std::string               &getErrorPage(unsigned int code) const;
         const std::string               &getRoot() const;
+        const Route                     &getDefaultRoute() const;
 
         bool        hasServername(std::string name) const;
         const Route &findRouteFromURN(std::string urn) const;
@@ -45,6 +46,8 @@ class ServerConf
         void        addServerName(std::string name);
         void        addErrorPage(unsigned int code, std::string path);
         void        setRoot(std::string root);
+        void        setIndex(std::string index);
+        void        setDirListing(bool state);
 };
 
 std::ostream    &operator<<(std::ostream &os, const ServerConf &conf);

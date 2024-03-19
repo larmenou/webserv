@@ -9,6 +9,8 @@ Config::Config(std::string config_path)
     serverUpdateFuncs["error_page"] = &Config::error_page;
     serverUpdateFuncs["client_max_body_size"] = &Config::client_max_body_size;
     serverUpdateFuncs["root"] = &Config::server_root;
+    serverUpdateFuncs["index"] = &Config::server_index;
+    serverUpdateFuncs["autoindex"] = &Config::server_autoindex;
 
     routeUpdateFuncs["root"] = &Config::root;
     routeUpdateFuncs["rewrite"] = &Config::rewrite;
@@ -305,6 +307,27 @@ bool    Config::client_max_body_size(std::vector<std::string> &dirs, ServerConf 
 }
 
 bool    Config::server_root(std::vector<std::string> &dirs, ServerConf &conf)
+{
+    if (dirs.size() != 2)
+        return false;
+    conf.setRoot(dirs[1]);
+    return true;
+}
+
+bool    Config::server_autoindex(std::vector<std::string> &dirs, ServerConf &conf)
+{
+    if (dirs.size() != 2)
+        return false;
+    if (dirs[1] == "on")
+        conf.setDirListing(true);
+    else if (dirs[1] == "off")
+        conf.setDirListing(false);
+    else
+        return false;
+    return true;
+}
+
+bool    Config::server_index(std::vector<std::string> &dirs, ServerConf &conf)
 {
     if (dirs.size() != 2)
         return false;
