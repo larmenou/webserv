@@ -16,6 +16,7 @@ Config::Config(std::string config_path)
     routeUpdateFuncs["autoindex"] = &Config::autoindex;
     routeUpdateFuncs["index"] = &Config::dir_default;
     routeUpdateFuncs["cgi_extension"] = &Config::cgi_extension;
+    routeUpdateFuncs["uploads"] = &Config::save_path;
 
     str2permmap["GET"] = GET;
     str2permmap["POST"] = POST;
@@ -171,7 +172,7 @@ void    Config::parseLocation(std::string &substr, size_t left, size_t right, Ro
 void  Config::extractLocations(std::string &substr, ServerConf &conf)
 {
     std::size_t         location_idx;
-    std::vector<Route>  locations;
+    std::set<Route>     locations;
     size_t              left = 0, right;
     std::string         route_str;
     Route               route;
@@ -190,7 +191,7 @@ void  Config::extractLocations(std::string &substr, ServerConf &conf)
         route.setRoute(route_str);
         if (DEBUG)
             std::cout << "[LOG] Adding " << route << std::endl;
-        locations.push_back(route);
+        locations.insert(route);
         route = Route();
         substr.erase(location_idx, right - location_idx);
     }
@@ -382,6 +383,15 @@ bool    Config::cgi_extension(std::vector<std::string> &dirs, Route &conf)
     if (dirs.size() != 2)
         return false;
     conf.setCgiExtension(dirs[1]);
+    return true;
+}
+
+bool    Config::save_path(std::vector<std::string> &dirs, Route &conf)
+{
+    if (dirs.size() != 2)
+        return false;
+    conf.setUpload(true);
+    conf.setSavePath(dirs[1]);
     return true;
 }
 
