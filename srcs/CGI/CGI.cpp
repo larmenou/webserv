@@ -204,7 +204,7 @@ void    CGI::parentProc(int fds[2], pid_t pid)
     do{
         rd = read(fds[0], &c, 1);
         if (rd < 0)
-            throw std::runtime_error("Error while reading output of CGI.");
+            throw std::runtime_error("500");
         _raw_response += c;
     } while (rd > 0);
     close(fds[0]);
@@ -218,12 +218,12 @@ void    CGI::forwardReq()
 
     _headers.clear();
     if (_env.size() == 0)
-        throw std::runtime_error("Unprepared request.");
+        throw std::runtime_error("500");
     if (pipe(fds) < 0)
-        throw std::runtime_error("Could not open pipe.");
+        throw std::runtime_error("500");
     pid = fork();
     if (pid == -1)
-        throw std::runtime_error("Could not fork.");
+        throw std::runtime_error("500");
     if (pid == 0)
         childProc(fds);
     else

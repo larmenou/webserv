@@ -50,6 +50,14 @@ void    split(std::string &in, std::vector<std::string> &out, char sep)
     } while (end != std::string::npos);
 }
 
+void readAllFile(std::ifstream &fs, std::string &out)
+{
+    std::stringstream ss;
+
+    ss << fs.rdbuf();
+    out = ss.str();
+}
+
 long         Config::str2perm(std::string &method_str)
 {
         std::map<std::string, long>::const_iterator ite;
@@ -67,14 +75,6 @@ std::string Config::perm2str(long perm)
         if (ite->second == perm)
             return ite->first;
     throw std::runtime_error("Invalid permissions");
-}
-
-static void readAllFile(std::ifstream &fs, std::string &out)
-{
-    std::string buff;
-
-    while (std::getline(fs, buff))
-        out += buff + "\n";
 }
 
 void    Config::initConfig(std::string &configPath)
@@ -107,7 +107,7 @@ static void determineBracketBounds(std::string &str,
             c--;
         right++;
     }
-    if (right == str.size())
+    if (c != 0)
         throw std::runtime_error("Invalid syntax");
 }
 

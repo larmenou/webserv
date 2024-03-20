@@ -238,13 +238,19 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		{
 			CGI cgi;
 
-			std::cout << "Send to CGI" << std::endl;
 			cgi.setCGI("/usr/bin/php-cgi");
 			cgi.prepare(req,route,_servers[i],"127.0.0.1");
-			cgi.forwardReq();
-			_body_response = cgi.getBody();
-			status = cgi.getStatus();
-			headers = cgi.buildRawHeader();
+			try {
+				cgi.forwardReq();
+				_body_response = cgi.getBody();
+				status = cgi.getStatus();
+				headers = cgi.buildRawHeader();
+			} catch (std::exception &e)
+			{
+				std::cout << "Error" << std::endl;
+				status = std::strtol(e.what(), NULL, 10);
+				_body_response = HTTPError::buildErrorPage(_servers[i], status);
+			}
 		}
 		else
 		{
