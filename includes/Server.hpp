@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/18 14:35:02 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/20 13:57:23 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <csignal>
 #include <poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -45,6 +46,8 @@ class Server
 		void acceptConnection(int &new_socket, int i);
 		void buildResponse(Request req, int i, int client_fd);
 		void sendResponse(int client_fd);
+
+		static void signalHandler(int);
 	
 	public:
 		Server(std::vector<ServerConf> servers);
