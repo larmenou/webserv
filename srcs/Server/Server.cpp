@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/19 13:27:12 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/20 12:53:23 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,7 +134,7 @@ void Server::loop()
 						std::string str = ss.str();
 						Request req(str);
 						
-						if (req.getBody().length() != 0)
+						if (_servers[i].getBodySizeLimit() > req.getBody().size())
 						{
 							std::string str = req.getBody();
 							users.addDb(str);
@@ -183,8 +183,23 @@ void Server::buildResponse(Request req, int i, int client_fd)
 	_body_response.clear();
 
 	if (req.getURN() != "/favicon.ico")
-	{
-		if (route.getRoot().size() > 0)
+	{	
+		if (_servers[i].getBodySizeLimit() <= req.getBody().size())
+		{
+			status = 413;
+			try
+			{
+				filename = _servers[i].getRoot() + "/" + _servers[i].getErrorPage(413);
+				fd = open(filename.c_str(), O_RDONLY);
+				if (fd == -1)
+					filename = "./html/413error.html";
+			}
+			catch (std::exception &e)
+			{
+				filename = "./html/413error.html";
+			}
+		}
+		else if (route.getRoot().size() > 0)
 		{
 			filename = route.getRoot();
 			filename += req.getURN().substr(route.getRoute().length() - 1);
@@ -226,18 +241,22 @@ void Server::buildResponse(Request req, int i, int client_fd)
 				_body_response = DirLister().generate_body(filename, req);
 			else
 			{
-				fd = open(filename.c_str(), O_RDONLY);
-				if (fd == -1)
+				status = 404;
+				try
 				{
 					fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
-					status = 404;
+					if (fd == -1)
+						fd = open("./html/404error.html", O_RDONLY);
 				}
-
-				char c;
-				while (read(fd, &c, 1) > 0)
-					_body_response += c;
-				close(fd);
+				catch (std::exception &e)
+				{
+					fd = open("./html/404error.html", O_RDONLY);
+				}
 			}
+			char c;
+			while (read(fd, &c, 1) > 0)
+				_body_response += c;
+			close(fd);
 		}
 		http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	}

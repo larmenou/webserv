@@ -303,7 +303,7 @@ bool    Config::client_max_body_size(std::vector<std::string> &dirs, ServerConf 
     if (*endptr != 0)
         return false;
     conf.setBodySizeLimit(size);
-    return false;
+    return true;
 }
 
 bool    Config::server_root(std::vector<std::string> &dirs, ServerConf &conf)
