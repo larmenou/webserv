@@ -18,6 +18,7 @@
 #include <csignal>
 #include <poll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +27,7 @@
 #include <fcntl.h>
 
 #include "Request.hpp"
+#include "DirLister.hpp"
 
 #define BUFF_SIZE 30720
 #define MAX_EVENTS 20

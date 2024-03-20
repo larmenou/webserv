@@ -30,6 +30,7 @@ ServerConf  &ServerConf::operator=(ServerConf const &a)
     _routes = a._routes;
     _error_pages = a._error_pages;
     _root = a._root;
+    _default_route = a._default_route;
 
     return *this;
 }
@@ -38,7 +39,7 @@ size_t                          ServerConf::getBodySizeLimit() const { return _b
 const std::string               &ServerConf::getIP() const { return _ip; }
 int                             ServerConf::getPort() const { return _port; }
 const std::vector<std::string>  &ServerConf::getNames() const { return _servernames; }
-const std::string               &ServerConf::getRoot() const { return _root; }
+const std::string               &ServerConf::getRoot() const { return _default_route.getRoot(); }
 
 const std::string               &ServerConf::getErrorPage(unsigned int code) const
 {
@@ -61,12 +62,15 @@ bool    ServerConf::hasServername(std::string name) const
 const Route &ServerConf::findRouteFromURN(std::string urn) const
 {
     std::set<Route>::const_reverse_iterator ite = _routes.rbegin();
+
     for (; ite != _routes.rend(); ite++)
     {
         const std::string &route = ite->getRoute();
 
         size_t end = urn.find(route, 0);
-        if (end == 0)
+        if (end == 0 && 
+            (urn[route.length()] == '/'
+            || urn.length() == route.length()))
             return *ite;
     }
     return _default_route;
@@ -82,7 +86,9 @@ void    ServerConf::setPort(int port) {
 void    ServerConf::setBodySizeLimit(size_t size) { _body_size_limit = size;}
 void    ServerConf::addServerName(std::string name) { _servernames.push_back(name); }
 void    ServerConf::addErrorPage(unsigned int code, std::string path) { _error_pages[code] = path; }
-void    ServerConf::setRoot(std::string root) { _root = root; }
+void    ServerConf::setRoot(std::string root) { _default_route.setRoot(root); }
+void    ServerConf::setDirListing(bool state) { _default_route.setListDirectory(state); }
+void    ServerConf::setIndex(std::string file) { _default_route.setDirFile(file); }
 
 std::ostream    &operator<<(std::ostream &os, const ServerConf &conf)
 {

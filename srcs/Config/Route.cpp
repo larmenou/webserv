@@ -56,7 +56,16 @@ long    Route::getMethodPerms() const { return _methodPerms; }
 bool    Route::isAcceptingUploads() const { return _acceptUploads; }
 bool    Route::isListingDirs() const { return _dirListing; }
 
-void    Route::setRoute(std::string route) { _route = route; }
+void    Route::setRoute(std::string route) { 
+    size_t  i;
+
+    _route = "";
+    if (route[0] != '/')
+        _route += '/';
+    for (i = route.size() - 1; i > 0 && route[i] == '/'; i--)
+        ;
+    _route += route.substr(0, i+1);
+}
 void    Route::setRoot(std::string root) { _root = root; }
 void    Route::setDirFile(std::string dirFile) {_isDirFile = dirFile; }
 void    Route::setCgiExtension(std::string getCgiExtension) { _cgiFileExtension = getCgiExtension; }
