@@ -44,6 +44,12 @@ void    trimstr(std::string &str)
     str = tmp;
 }
 
+static void strtolower(std::string &str)
+{
+    for (size_t i = 0; i < str.length(); i++)
+        str[i] = std::tolower(str[i]);
+}
+
 Request::Request(std::string &raw_req)
 {
     parseFromRaw(raw_req);
@@ -62,6 +68,7 @@ const std::map<std::string, std::string>  &Request::getURLParams() const { retur
 
 const std::string   Request::findHeader(std::string key) const
 {
+    strtolower(key);
     std::map<std::string, std::string>::const_iterator ite = _headers.find(key);
     if (ite == _headers.end())
         return "";
@@ -101,6 +108,7 @@ void    Request::parseLineHeader(std::string &line)
     if (out.size() != 2)
         return ;
     trimstr(out[0]); trimstr(out[1]);
+    strtolower(out[0]);
     _headers[out[0]] = out[1];
 }
 
