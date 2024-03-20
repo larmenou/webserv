@@ -245,11 +245,9 @@ void Server::buildResponse(Request req, int i, int client_fd)
 				_body_response = cgi.getBody();
 				status = cgi.getStatus();
 				headers = cgi.buildRawHeader();
-			} catch (std::exception &e)
-			{
-				std::cout << "Error" << std::endl;
-				status = std::strtol(e.what(), NULL, 10);
-				_body_response = HTTPError::buildErrorPage(_servers[i], status);
+			} catch (std::exception &e) {
+				_body_response = HTTPError::buildErrorPage(_servers[i], 
+															status = std::strtol(e.what(), NULL, 10));
 			}
 		}
 		else
@@ -260,19 +258,7 @@ void Server::buildResponse(Request req, int i, int client_fd)
 			{
 				fd = open(filename.c_str(), O_RDONLY);
 				if (fd == -1)
-				{ 
-					status = 404;
-					try
-					{
-						fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
-						if (fd == -1)
-							fd = open("./html/404error.html", O_RDONLY);
-					}
-					catch (std::exception &e)
-					{
-						fd = open("./html/404error.html", O_RDONLY);
-					}
-				}
+					_body_response = HTTPError::buildErrorPage(_servers[i], status = 404);
 				char c;
 				while (read(fd, &c, 1) > 0)
 					_body_response += c;

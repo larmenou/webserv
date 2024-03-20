@@ -66,7 +66,7 @@ std::string HTTPError::buildErrorPage(ServerConf const &conf, int code)
     {
         std::ifstream fs(conf.getErrorPage(code).c_str());
 
-        if (fs.is_open())
+        if (!fs.is_open())
             throw std::exception();
         readAllFile(fs, ret);
         return ret;
