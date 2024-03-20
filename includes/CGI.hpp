@@ -9,6 +9,8 @@
 #include "Request.hpp"
 #include "Route.hpp"
 
+#define GATEWAY_TIMEOUT 5.0
+
 class CGI
 {
     private :

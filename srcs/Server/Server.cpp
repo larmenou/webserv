@@ -198,72 +198,65 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		if (_servers[i].getBodySizeLimit() <= req.getBody().size())
 		{
 			status = 413;
-			try
-			{
-				filename = _servers[i].getRoot() + "/" + _servers[i].getErrorPage(413);
-				fd = open(filename.c_str(), O_RDONLY);
-				if (fd == -1)
-					filename = "./html/413error.html";
-			}
-			catch (std::exception &e)
-			{
-				filename = "./html/413error.html";
-			}
-		}
-		else if (route.getRoot().size() > 0)
-		{
-			filename = route.getRoot();
-			filename += req.getURN().substr(route.getRoute().length() - 1);
-			if (filename == route.getRoot() + "/")
-				filename += route.getDirFile();
-		}
-		else if (route.getRewrite().second.size() > 0)
-		{
-			status = route.getRedirCode();
-			http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nLocation: " << route.getRewrite().second << "\r\nContent-Length: 0\r\n";
-			_header_response = http.str();
-			
-			send(client_fd, _header_response.c_str(), _header_response.size(), 0);
-			return ;
+			_body_response = HTTPError::buildErrorPage(_servers[i], status = 413);
 		}
 		else
 		{
-			filename = _default_root;
-			filename += req.getURN();
-			if (filename == _default_root + "/")
-				filename += "index.html";
-		}
-
-		if (req.checkExtension(route.getCgiExtension()))
-		{
-			CGI cgi;
-
-			cgi.setCGI("/usr/bin/php-cgi");
-			cgi.prepare(req,route,_servers[i],"127.0.0.1");
-			try {
-				cgi.forwardReq();
-				_body_response = cgi.getBody();
-				status = cgi.getStatus();
-				headers = cgi.buildRawHeader();
-			} catch (std::exception &e) {
-				_body_response = HTTPError::buildErrorPage(_servers[i], 
-															status = std::strtol(e.what(), NULL, 10));
+			if (route.getRoot().size() > 0)
+			{
+				filename = route.getRoot();
+				filename += req.getURN().substr(route.getRoute().length() - 1);
+				if (filename == route.getRoot() + "/")
+					filename += route.getDirFile();
 			}
-		}
-		else
-		{
-			if (isDir(filename) && route.isListingDirs())
-				_body_response = DirLister().generate_body(filename, req);
+			else if (route.getRewrite().second.size() > 0)
+			{
+				status = route.getRedirCode();
+				http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nLocation: " << route.getRewrite().second << "\r\nContent-Length: 0\r\n";
+				_header_response = http.str();
+				
+				send(client_fd, _header_response.c_str(), _header_response.size(), 0);
+				return ;
+			}
 			else
 			{
-				fd = open(filename.c_str(), O_RDONLY);
-				if (fd == -1)
-					_body_response = HTTPError::buildErrorPage(_servers[i], status = 404);
-				char c;
-				while (read(fd, &c, 1) > 0)
-					_body_response += c;
-				close(fd);
-		}
+				filename = _default_root;
+				filename += req.getURN();
+				if (filename == _default_root + "/")
+					filename += "index.html";
+			}
+
+			if (req.checkExtension(route.getCgiExtension()))
+			{
+				CGI cgi;
+
+				cgi.setCGI("/usr/bin/catsdgd");
+				cgi.prepare(req,route,_servers[i],"127.0.0.1");
+				try {
+					cgi.forwardReq();
+					_body_response = cgi.getBody();
+					status = cgi.getStatus();
+					headers = cgi.buildRawHeader();
+				} catch (std::exception &e) {
+					_body_response = HTTPError::buildErrorPage(_servers[i], 
+																status = std::strtol(e.what(), NULL, 10));
+				}
+			}
+			else
+			{
+				if (isDir(filename) && route.isListingDirs())
+					_body_response = DirLister().generate_body(filename, req);
+				else
+				{
+					fd = open(filename.c_str(), O_RDONLY);
+					if (fd == -1)
+						_body_response = HTTPError::buildErrorPage(_servers[i], status = 404);
+					char c;
+					while (read(fd, &c, 1) > 0)
+						_body_response += c;
+					close(fd);
+				}
+			}
 		}
 		http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	}

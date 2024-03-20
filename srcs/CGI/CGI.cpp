@@ -189,9 +189,29 @@ void    CGI::childProc(int fds[2])
     exit(1);
 }
 
-void    CGI::parentProc(int fds[2], pid_t pid)
+static void waitTimeout(pid_t pid)
 {
     int     s;
+    int     ret;
+    clock_t start;
+
+    start = clock();
+    while ((ret = waitpid(pid, &s, WNOHANG)) == 0)
+    {
+        std::cout << ret << std::endl;
+        if (!WIFEXITED(s))
+            throw std::runtime_error("503");
+        if (((clock() - start) / CLOCKS_PER_SEC) >= GATEWAY_TIMEOUT )
+        {
+            kill(pid, SIGSTOP);
+            throw std::runtime_error("504");
+        }
+    }
+
+}
+
+void    CGI::parentProc(int fds[2], pid_t pid)
+{
     char    c;
     ssize_t rd;
 
@@ -199,9 +219,8 @@ void    CGI::parentProc(int fds[2], pid_t pid)
     if (_env["REQUEST_METHOD"] == "POST")
         write(fds[1], _request->getBody().c_str(), _request->getBody().length());
     close(fds[1]);
-    if (waitpid(pid, &s, WUNTRACED) < 0)
-        throw std::runtime_error("Serverside error");
-    do{
+    waitTimeout(pid);
+    do {
         rd = read(fds[0], &c, 1);
         if (rd < 0)
             throw std::runtime_error("500");
