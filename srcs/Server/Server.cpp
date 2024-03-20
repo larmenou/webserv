@@ -6,7 +6,7 @@
 /*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/20 12:53:23 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/20 13:06:53 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -241,22 +241,26 @@ void Server::buildResponse(Request req, int i, int client_fd)
 				_body_response = DirLister().generate_body(filename, req);
 			else
 			{
-				status = 404;
-				try
-				{
-					fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
-					if (fd == -1)
+				fd = open(filename.c_str(), O_RDONLY);
+				if (fd == -1)
+				{ 
+					status = 404;
+					try
+					{
+						fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
+						if (fd == -1)
+							fd = open("./html/404error.html", O_RDONLY);
+					}
+					catch (std::exception &e)
+					{
 						fd = open("./html/404error.html", O_RDONLY);
+					}
 				}
-				catch (std::exception &e)
-				{
-					fd = open("./html/404error.html", O_RDONLY);
-				}
-			}
-			char c;
-			while (read(fd, &c, 1) > 0)
-				_body_response += c;
-			close(fd);
+				char c;
+				while (read(fd, &c, 1) > 0)
+					_body_response += c;
+				close(fd);
+		}
 		}
 		http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	}

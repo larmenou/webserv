@@ -10,6 +10,7 @@ void    DirLister::list(std::string path)
 {
     DIR     *ds;
     dirent  *de;
+    std::string name;
 
     _files.clear();
     ds = opendir(path.c_str());
@@ -21,7 +22,10 @@ void    DirLister::list(std::string path)
         de = readdir(ds);
         if (de == NULL)
             break;
-        _files.insert(de->d_name);
+        name = de->d_name;
+        if (de->d_type == DT_DIR)
+            name += '/';
+        _files.insert(name);
     }
     if (errno != 0)
     {
