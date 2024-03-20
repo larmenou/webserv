@@ -62,12 +62,15 @@ bool    ServerConf::hasServername(std::string name) const
 const Route &ServerConf::findRouteFromURN(std::string urn) const
 {
     std::set<Route>::const_reverse_iterator ite = _routes.rbegin();
+
     for (; ite != _routes.rend(); ite++)
     {
         const std::string &route = ite->getRoute();
 
         size_t end = urn.find(route, 0);
-        if (end == 0)
+        if (end == 0 && 
+            (urn[route.length()] == '/'
+            || urn.length() == route.length()))
             return *ite;
     }
     return _default_route;
