@@ -4,6 +4,32 @@ std::map<int, std::string> HTTPError::_status_codes;
 
 void    HTTPError::initHTTPErrors()
 {
+    _status_codes[100] = "Continue";
+    _status_codes[101] = "Switching Protocols";
+    _status_codes[102] = "Processing"; // WebDAV; RFC 2518
+    _status_codes[103] = "Early Hints"; // RFC 8297
+
+    _status_codes[200] = "OK";
+    _status_codes[201] = "Created";
+    _status_codes[202] = "Accepted";
+    _status_codes[203] = "Non-Authoritative Information";
+    _status_codes[204] = "No Content";
+    _status_codes[205] = "Reset Content";
+    _status_codes[206] = "Partial Content";
+    _status_codes[207] = "Multi-Status"; // WebDAV; RFC 4918
+    _status_codes[208] = "Already Reported"; // WebDAV; RFC 5842
+    _status_codes[226] = "IM Used"; // RFC 3229
+
+    _status_codes[300] = "Multiple Choices";
+    _status_codes[301] = "Moved Permanently";
+    _status_codes[302] = "Found";
+    _status_codes[303] = "See Other";
+    _status_codes[304] = "Not Modified";
+    _status_codes[305] = "Use Proxy";
+    _status_codes[306] = "Switch Proxy";
+    _status_codes[307] = "Temporary Redirect";
+    _status_codes[308] = "Permanent Redirect"; // RFC 7538
+
     _status_codes[400] = "Bad Request";
     _status_codes[401] = "Unauthorized";
     _status_codes[402] = "Payment Required";
@@ -73,17 +99,19 @@ std::string HTTPError::buildErrorPage(ServerConf const &conf, int code)
     }
     catch (...)
     {
-        std::map<int, std::string>::iterator ite;
-        std::string                          error_str;
-
-        if ((ite = _status_codes.find(code)) == _status_codes.end())
-            error_str = "Unkown error code";
-        else
-            error_str = ite->second;
         buildHead(ret);
         ret += "<body>";
-        ret += error_str;
-        ret += "</body>";
+        ret += HTTPError::getErrorString(code);
+        ret += "</body>\n</html>";
     }
     return ret;
+}
+
+std::string HTTPError::getErrorString(int code)
+{
+    std::map<int, std::string>::iterator ite;
+
+    if ((ite = _status_codes.find(code)) == _status_codes.end())
+        return "Unkown error code";
+    return ite->second;
 }

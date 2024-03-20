@@ -230,7 +230,7 @@ void Server::buildResponse(Request req, int i, int client_fd)
 			{
 				CGI cgi;
 
-				cgi.setCGI("/usr/bin/catsdgd");
+				cgi.setCGI("/usr/bin/php-cgi");
 				cgi.prepare(req,route,_servers[i],"127.0.0.1");
 				try {
 					cgi.forwardReq();
@@ -258,17 +258,17 @@ void Server::buildResponse(Request req, int i, int client_fd)
 				}
 			}
 		}
-		http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+		http << "HTTP/1.1" << " " << status << " " << HTTPError::getErrorString(status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	}
 	
 	if (req.getHeaders().find("Connection")->second == " keep-alive")
 	{
-		http << "Connection: keep-alive\r\n" << headers << "\r\n\r\n";
+		http << "Connection: keep-alive\r\n" << headers << "\r\n";
 		_header_response = http.str();
 	}
 	else
 	{
-		http << "Connection: close\r\n" << headers << "\r\n\r\n";
+		http << "Connection: close\r\n" << headers << "\r\n";
 		_header_response = http.str();
 	}
 	

@@ -186,7 +186,7 @@ void    CGI::childProc(int fds[2])
     close(fds[1]);
     _env_execve = buildEnvFromAttr();
     execve(_cgi_path.c_str(), av, _env_execve);
-    exit(1);
+    exit(127);
 }
 
 static void waitTimeout(pid_t pid)
@@ -196,18 +196,19 @@ static void waitTimeout(pid_t pid)
     clock_t start;
 
     start = clock();
+    s = 0;
     while ((ret = waitpid(pid, &s, WNOHANG)) == 0)
     {
-        std::cout << ret << std::endl;
-        if (!WIFEXITED(s))
-            throw std::runtime_error("503");
         if (((clock() - start) / CLOCKS_PER_SEC) >= GATEWAY_TIMEOUT )
         {
             kill(pid, SIGSTOP);
             throw std::runtime_error("504");
         }
     }
-
+    if (ret < 0)
+        throw std::runtime_error("500");
+    if (WIFEXITED(s) && WEXITSTATUS(s) != 0)
+        throw std::runtime_error("503");
 }
 
 void    CGI::parentProc(int fds[2], pid_t pid)
@@ -305,9 +306,7 @@ std::string         CGI::buildRawHeader() const
         ret += ite->first;
         ret += ": ";
         ret += ite->second;
-        if (++ite != _headers.end())
-            ret += "\r\n";
-        ite--;
+        ret += "\r\n";
     }
     return ret;
 }

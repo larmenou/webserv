@@ -20,6 +20,7 @@ class HTTPError
         HTTPError   &operator=(HTTPError const &a);
     public :
         static void         initHTTPErrors();
+        static std::string  getErrorString(int code);
         static std::string  buildErrorPage(ServerConf const &conf, int code);
 };
 
