@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/20 10:26:13 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/20 13:06:53 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -162,6 +162,15 @@ void Server::acceptConnection(int &new_socket, int i)
 	}
 }
 
+static bool	isDir(std::string path)
+{
+	struct stat	s;
+
+	if (stat(path.c_str(), &s) == -1)
+		return false;
+	return (s.st_mode & S_IFMT) == S_IFDIR;
+}
+
 void Server::buildResponse(Request req, int i, int client_fd)
 {
 	std::stringstream http;
@@ -199,20 +208,20 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		}
 		else if (route.getRewrite().second.size() > 0)
 		{
-			status = 301;
+			status = route.getRedirCode();
 			http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nLocation: " << route.getRewrite().second << "\r\nContent-Length: 0\r\n";
 			_header_response = http.str();
 			
 			send(client_fd, _header_response.c_str(), _header_response.size(), 0);
 			return ;
 		}
-		else
+		/*else
 		{
 			filename = _default_root;
 			filename += req.getURN();
 			if (filename == _default_root + "/")
 				filename += "index.html";
-		}
+		}*/
 
 		if (req.checkExtension(route.getCgiExtension()))
 		{
@@ -228,26 +237,30 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		}
 		else
 		{
-			fd = open(filename.c_str(), O_RDONLY);
-			if (fd == -1)
+			if (isDir(filename) && route.isListingDirs())
+				_body_response = DirLister().generate_body(filename, req);
+			else
 			{
-				status = 404;
-				try
-				{
-					fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
-					if (fd == -1)
+				fd = open(filename.c_str(), O_RDONLY);
+				if (fd == -1)
+				{ 
+					status = 404;
+					try
+					{
+						fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
+						if (fd == -1)
+							fd = open("./html/404error.html", O_RDONLY);
+					}
+					catch (std::exception &e)
+					{
 						fd = open("./html/404error.html", O_RDONLY);
+					}
 				}
-				catch (std::exception &e)
-				{
-					fd = open("./html/404error.html", O_RDONLY);
-				}
-			}
-
-			char c;
-			while (read(fd, &c, 1) > 0)
-				_body_response += c;
-			close(fd);
+				char c;
+				while (read(fd, &c, 1) > 0)
+					_body_response += c;
+				close(fd);
+		}
 		}
 		http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	}
