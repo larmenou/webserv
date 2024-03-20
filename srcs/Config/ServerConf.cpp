@@ -66,11 +66,14 @@ const Route &ServerConf::findRouteFromURN(std::string urn) const
     for (; ite != _routes.rend(); ite++)
     {
         const std::string &route = ite->getRoute();
-
+        if (route.compare("/") == 0)
+            return *ite;
         size_t end = urn.find(route, 0);
-        if (end == 0 && 
-            (urn[route.length()] == '/'
-            || urn.length() == route.length()))
+        if (end != 0)
+            continue ;
+        if (urn[route.length()] == '/')
+            return *ite;
+        if (urn.length() == route.length())
             return *ite;
     }
     return _default_route;
