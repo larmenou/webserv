@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/20 13:59:19 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/20 14:30:29 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -212,6 +212,9 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		}
 		else if (route.getRoot().size() > 0)
 		{
+			/* std::cout << "route: " << route << std::endl;
+			std::cout << req.getURN().substr(route.getRoute().length() - 1) << std::endl; */
+			
 			filename = route.getRoot();
 			filename += req.getURN().substr(route.getRoute().length() - 1);
 			if (filename == route.getRoot() + "/")
@@ -226,13 +229,13 @@ void Server::buildResponse(Request req, int i, int client_fd)
 			send(client_fd, _header_response.c_str(), _header_response.size(), 0);
 			return ;
 		}
-		else
+		/* else
 		{
 			filename = _default_root;
 			filename += req.getURN();
 			if (filename == _default_root + "/")
 				filename += "index.html";
-		}
+		} */
 
 		if (req.checkExtension(route.getCgiExtension()))
 		{
@@ -248,6 +251,7 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		}
 		else
 		{
+			std::cout << filename << std::endl;
 			if (isDir(filename) && route.isListingDirs())
 				_body_response = DirLister().generate_body(filename, req);
 			else
