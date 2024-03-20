@@ -6,7 +6,7 @@
 /*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/20 13:06:53 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/20 13:59:19 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,15 @@
 #include "RegisteredUsers.hpp"
 #include "CGI.hpp"
 
+void Server::signalHandler(int)
+{}
+
 Server::Server(std::vector<ServerConf> servers) : _servers(servers), _sockets_listen(), _socketAddresses(), _header_response(), _body_response(), _default_root("./html")
 {
 	struct sockaddr_in socketAddress;
+	
+	signal(SIGINT, &Server::signalHandler);
+	signal(SIGQUIT, &Server::signalHandler);
 
 	_status_code.insert(std::pair<int, std::string>(200, "OK"));
 	_status_code.insert(std::pair<int, std::string>(201, "Created"));
@@ -43,6 +49,7 @@ Server::Server(std::vector<ServerConf> servers) : _servers(servers), _sockets_li
 Server::~Server()
 {
 	closeServer();
+	signal(SIGINT, SIG_DFL);
 }
 
 int Server::startServer(int i)
@@ -50,8 +57,10 @@ int Server::startServer(int i)
 	int socket_listen = socket(AF_INET, SOCK_STREAM, 0);
 	int enable = 1;
 	
-	if (setsockopt(socket_listen, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+	if (setsockopt(socket_listen, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+	{
 		std::cerr << "Error setting SO_REUSEADDR" << std::endl;
+		return (1);
 	}
 	if (socket_listen < 0)
 	{
@@ -106,6 +115,8 @@ void Server::loop()
 		ready = poll(pollfds.data(), pollfds.size(), -1);
 		if (ready == -1)
 		{
+			if (errno == EINTR)
+				break ;
 			std::cout << "Poll failed." << std::endl;
 			break ;
 		}
@@ -215,13 +226,13 @@ void Server::buildResponse(Request req, int i, int client_fd)
 			send(client_fd, _header_response.c_str(), _header_response.size(), 0);
 			return ;
 		}
-		/*else
+		else
 		{
 			filename = _default_root;
 			filename += req.getURN();
 			if (filename == _default_root + "/")
 				filename += "index.html";
-		}*/
+		}
 
 		if (req.checkExtension(route.getCgiExtension()))
 		{
