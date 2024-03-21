@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/21 11:12:08 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/21 16:10:53 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -282,6 +282,73 @@ void Server::buildHeaderConnection(std::string headers, Request req, std::string
 	}
 }
 
+void Server::multipartUpload(const Request &req,
+								const Route &route,
+								const std::string &boundary)
+{	
+	(void) req, (void) route, (void) boundary;
+}
+
+static bool	buildUploadPath(const Request &req, const Route &route, std::string &out)
+{	
+	out = route.getSavePath();
+	out += req.getURN().substr(route.getRoute().length() - 1);
+
+	return true;
+}
+
+void Server::basicUpload(const Request &req, const Route &route)
+{
+	std::ofstream	of;
+	std::string		upload_path;
+
+	buildUploadPath(req, route, upload_path);
+	of.open(upload_path.c_str(), std::ios::out);
+	if (!of.is_open())
+	{
+		std::cout << upload_path << std::endl;
+		if (fileExists(upload_path) || isDir(upload_path))
+			throw std::runtime_error("403");
+		else
+			throw std::runtime_error("500");
+	}
+	of << req.getBody();
+	of.close();
+}
+
+int	Server::handleUpload(const Request &req, const Route &route, int i)
+{
+	std::vector<std::string>	out;
+	std::string					boundary;
+	std::string					content_type;
+	std::string					type;
+	size_t						semicol;
+	int							status = 200;
+
+	strtolower(content_type = req.findHeader("content-type"));
+	try {
+		semicol = content_type.find(';');
+		type = content_type.substr(0, semicol);
+		if (type == "multipart/form-data")
+		{
+			if (semicol == std::string::npos)
+				throw std::runtime_error("400");
+			semicol = content_type.find("boundary=");
+			if (semicol == std::string::npos 
+				|| semicol == content_type.length() - 1)
+				throw std::runtime_error("400");
+			boundary = content_type.substr(semicol + 9);
+			multipartUpload(req, route, boundary);
+		}
+		else
+			basicUpload(req, route);
+	} catch (std::exception &e)
+	{
+		_body_response = HTTPError::buildErrorPage(_servers[i], status = std::strtol(e.what(), NULL, 10));
+	}
+	return status;
+}
+
 void Server::buildResponse(Request req, int i, int client_fd)
 {
 	std::stringstream http;
@@ -291,13 +358,15 @@ void Server::buildResponse(Request req, int i, int client_fd)
 	const Route &route = _servers[i].findRouteFromURN(req.getURN());
 
 	_body_response.clear();
-
+	std::cout << "Accepts uploads : " << route.getRoute() << std::endl;
 	if (req.getURN() != "/favicon.ico")
 	{	
 		if (_servers[i].getBodySizeLimit() <= req.getBody().size())
 		{
 			_body_response = HTTPError::buildErrorPage(_servers[i], status = 413);
 		}
+		else if (req.getMethod() == PUT && route.isAcceptingUploads())
+			status = handleUpload(req, route, i);
 		else
 		{
 			if (route.getRoot().size() > 0)

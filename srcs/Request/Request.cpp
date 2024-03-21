@@ -44,7 +44,7 @@ void    trimstr(std::string &str)
     str = tmp;
 }
 
-static void strtolower(std::string &str)
+void strtolower(std::string &str)
 {
     for (size_t i = 0; i < str.length(); i++)
         str[i] = std::tolower(str[i]);

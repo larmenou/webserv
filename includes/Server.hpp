@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/21 10:58:01 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/21 15:52:29 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,7 +56,11 @@ class Server
 		int buildBodyResp(std::string filename, Request req, Route route, int i);
 		std::string buildFilename(Route route, Request req);
 		void buildHeaderConnection(std::string headers, Request req, std::stringstream *http);
-
+		int	handleUpload(const Request &req, const Route &route, int i);
+		void multipartUpload(const Request &req,
+								const Route &route,
+								const std::string &boundary);
+		void basicUpload(const Request &req, const Route &route);
 		static void signalHandler(int);
 	
 	public:

@@ -9,6 +9,8 @@
 
 bool    getlineCRLF(std::stringstream &ss, std::string &str);
 void    trimstr(std::string &str);
+void    strtolower(std::string &str);
+
 
 class Request
 {
