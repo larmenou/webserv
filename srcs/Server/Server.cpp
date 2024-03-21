@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/20 14:30:29 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/20 14:35:02 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -212,8 +212,8 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		}
 		else if (route.getRoot().size() > 0)
 		{
-			/* std::cout << "route: " << route << std::endl;
-			std::cout << req.getURN().substr(route.getRoute().length() - 1) << std::endl; */
+			std::cout << "route: " << route << std::endl;
+			std::cout << req.getURN().substr(route.getRoute().length() - 1) << std::endl;
 			
 			filename = route.getRoot();
 			filename += req.getURN().substr(route.getRoute().length() - 1);
