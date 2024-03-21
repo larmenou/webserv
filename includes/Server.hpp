@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/20 13:57:23 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/21 10:58:01 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,6 @@ class Server
 		std::vector<sockaddr_in>	_socketAddresses;
 		std::string 				_header_response;
 		std::string 				_body_response;
-		std::map<int, std::string>	_status_code;
 		const std::string			_default_root;
 
 		int startServer(int i);
@@ -49,6 +48,14 @@ class Server
 		void acceptConnection(int &new_socket, int i);
 		void buildResponse(Request req, int i, int client_fd);
 		void sendResponse(int client_fd);
+		void initPollfds(std::vector<pollfd> *pollfds);
+		void addPollfd(std::vector<pollfd> *pollfds, int client_fd, int i);
+		void recvDataAndBuildResp(int client_fd, int i);
+		int buildCgiResp(std::string *headers, Request req, Route route, int i);
+		void buildRedirResp(Route route, int client_fd);
+		int buildBodyResp(std::string filename, Request req, Route route, int i);
+		std::string buildFilename(Route route, Request req);
+		void buildHeaderConnection(std::string headers, Request req, std::stringstream *http);
 
 		static void signalHandler(int);
 	
