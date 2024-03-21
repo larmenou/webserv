@@ -143,15 +143,23 @@ void Server::loop()
 
 						std::stringstream ss(buffer);
 						std::string str = ss.str();
-						Request req(str);
-						
-						if (_servers[i].getBodySizeLimit() > req.getBody().size())
+						try
 						{
-							std::string str = req.getBody();
-							users.addDb(str);
+							Request req(str);
+							if (_servers[i].getBodySizeLimit() > req.getBody().size())
+							{
+								std::string str = req.getBody();
+								users.addDb(str);
+							}
+							buildResponse(req, i, client_fd);
+						} catch (std::exception &e)
+						{
+							std::stringstream http;
+							_body_response = HTTPError::buildErrorPage(_servers[i], 400);
+							http << "HTTP/1.1" << " " << 400 << " " << HTTPError::getErrorString(400) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+							sendResponse(client_fd);
 						}
 
-						buildResponse(req, i, client_fd);
 					}
 					close(client_fd);
 					pollfds.erase(pollfds.begin() + i + 1);
