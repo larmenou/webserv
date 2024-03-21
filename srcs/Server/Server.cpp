@@ -6,7 +6,7 @@
 /*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/21 16:52:05 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/21 17:01:05 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -292,7 +292,7 @@ void Server::multipartUpload(const Request &req,
 static bool	buildUploadPath(const Request &req, const Route &route, std::string &out)
 {	
 	out = route.getSavePath();
-	out += req.getURN().substr(route.getRoute().length() - 1);
+	out += req.getURN().substr(route.getRoute().length());
 
 	return true;
 }
