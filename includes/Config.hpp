@@ -23,6 +23,7 @@
 #endif
 
 void    split(std::string &in, std::vector<std::string> &out, char sep);
+void    readAllFile(std::ifstream &fs, std::string &out);
 
 class   Config
 {
