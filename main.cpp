@@ -22,6 +22,7 @@ int main (int ac, char **av)
 		Config conf(av[1]);
 		const std::vector<ServerConf>   &servers = conf.getServers();
 
+		HTTPError::initHTTPErrors();
 		Server s = Server(servers);
 		s.loop();
 	} catch (std::exception &e)

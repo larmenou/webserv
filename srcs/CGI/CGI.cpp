@@ -186,12 +186,33 @@ void    CGI::childProc(int fds[2])
     close(fds[1]);
     _env_execve = buildEnvFromAttr();
     execve(_cgi_path.c_str(), av, _env_execve);
-    exit(1);
+    exit(127);
+}
+
+static void waitTimeout(pid_t pid)
+{
+    int     s;
+    int     ret;
+    clock_t start;
+
+    start = clock();
+    s = 0;
+    while ((ret = waitpid(pid, &s, WNOHANG)) == 0)
+    {
+        if (((clock() - start) / CLOCKS_PER_SEC) >= GATEWAY_TIMEOUT )
+        {
+            kill(pid, SIGSTOP);
+            throw std::runtime_error("504");
+        }
+    }
+    if (ret < 0)
+        throw std::runtime_error("500");
+    if (WIFEXITED(s) && WEXITSTATUS(s) != 0)
+        throw std::runtime_error("503");
 }
 
 void    CGI::parentProc(int fds[2], pid_t pid)
 {
-    int     s;
     char    c;
     ssize_t rd;
 
@@ -199,12 +220,11 @@ void    CGI::parentProc(int fds[2], pid_t pid)
     if (_env["REQUEST_METHOD"] == "POST")
         write(fds[1], _request->getBody().c_str(), _request->getBody().length());
     close(fds[1]);
-    if (waitpid(pid, &s, WUNTRACED) < 0)
-        throw std::runtime_error("Serverside error");
-    do{
+    waitTimeout(pid);
+    do {
         rd = read(fds[0], &c, 1);
         if (rd < 0)
-            throw std::runtime_error("Error while reading output of CGI.");
+            throw std::runtime_error("500");
         _raw_response += c;
     } while (rd > 0);
     close(fds[0]);
@@ -218,12 +238,12 @@ void    CGI::forwardReq()
 
     _headers.clear();
     if (_env.size() == 0)
-        throw std::runtime_error("Unprepared request.");
+        throw std::runtime_error("500");
     if (pipe(fds) < 0)
-        throw std::runtime_error("Could not open pipe.");
+        throw std::runtime_error("500");
     pid = fork();
     if (pid == -1)
-        throw std::runtime_error("Could not fork.");
+        throw std::runtime_error("500");
     if (pid == 0)
         childProc(fds);
     else
@@ -286,9 +306,7 @@ std::string         CGI::buildRawHeader() const
         ret += ite->first;
         ret += ": ";
         ret += ite->second;
-        if (++ite != _headers.end())
-            ret += "\r\n";
-        ite--;
+        ret += "\r\n";
     }
     return ret;
 }

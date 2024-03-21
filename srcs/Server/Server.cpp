@@ -143,15 +143,22 @@ void Server::loop()
 
 						std::stringstream ss(buffer);
 						std::string str = ss.str();
-						Request req(str);
-						
-						if (_servers[i].getBodySizeLimit() > req.getBody().size())
+						try
 						{
-							std::string str = req.getBody();
-							users.addDb(str);
+							Request req(str);
+							if (_servers[i].getBodySizeLimit() > req.getBody().size())
+							{
+								std::string str = req.getBody();
+								users.addDb(str);
+							}
+							buildResponse(req, i, client_fd);
+						} catch (std::exception &e)
+						{
+							std::stringstream http;
+							_body_response = HTTPError::buildErrorPage(_servers[i], 400);
+							http << "HTTP/1.1" << " " << 400 << " " << HTTPError::getErrorString(400) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+							sendResponse(client_fd);
 						}
-
-						buildResponse(req, i, client_fd);
 					}
 					close(client_fd);
 					pollfds.erase(pollfds.begin() + i + 1);
@@ -182,6 +189,15 @@ static bool	isDir(std::string path)
 	return (s.st_mode & S_IFMT) == S_IFDIR;
 }
 
+static bool	fileExists(std::string path)
+{
+	struct stat	s;
+
+	if (stat(path.c_str(), &s) == -1)
+		return false;
+	return true;
+}
+
 void Server::buildResponse(Request req, int i, int client_fd)
 {
 	std::stringstream http;
@@ -198,92 +214,80 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		if (_servers[i].getBodySizeLimit() <= req.getBody().size())
 		{
 			status = 413;
-			try
-			{
-				filename = _servers[i].getRoot() + "/" + _servers[i].getErrorPage(413);
-				fd = open(filename.c_str(), O_RDONLY);
-				if (fd == -1)
-					filename = "./html/413error.html";
-			}
-			catch (std::exception &e)
-			{
-				filename = "./html/413error.html";
-			}
-		}
-		else if (route.getRoot().size() > 0)
-		{
-			filename = route.getRoot();
-			filename += req.getURN().substr(route.getRoute().length() - 1);
-			if (filename == route.getRoot() + "/")
-				filename += route.getDirFile();
-		}
-		else if (route.getRewrite().second.size() > 0)
-		{
-			status = route.getRedirCode();
-			http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nLocation: " << route.getRewrite().second << "\r\nContent-Length: 0\r\n";
-			_header_response = http.str();
-			
-			send(client_fd, _header_response.c_str(), _header_response.size(), 0);
-			return ;
+			_body_response = HTTPError::buildErrorPage(_servers[i], status = 413);
 		}
 		else
 		{
-			filename = _default_root;
-			filename += req.getURN();
-			if (filename == _default_root + "/")
-				filename += "index.html";
-		}
-
-		if (req.checkExtension(route.getCgiExtension()))
-		{
-			CGI cgi;
-
-			std::cout << "Send to CGI" << std::endl;
-			cgi.setCGI("/usr/bin/php-cgi");
-			cgi.prepare(req,route,_servers[i],"127.0.0.1");
-			cgi.forwardReq();
-			_body_response = cgi.getBody();
-			status = cgi.getStatus();
-			headers = cgi.buildRawHeader();
-		}
-		else
-		{
-			if (isDir(filename) && route.isListingDirs())
-				_body_response = DirLister().generate_body(filename, req);
+			if (route.getRoot().size() > 0)
+			{
+				filename = route.getRoot();
+				filename += req.getURN().substr(route.getRoute().length() - 1);
+				if (filename == route.getRoot() + "/")
+					filename += route.getDirFile();
+			}
+			else if (route.getRewrite().second.size() > 0)
+			{
+				status = route.getRedirCode();
+				http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nLocation: " << route.getRewrite().second << "\r\nContent-Length: 0\r\n";
+				_header_response = http.str();
+				
+				send(client_fd, _header_response.c_str(), _header_response.size(), 0);
+				return ;
+			}
 			else
 			{
-				fd = open(filename.c_str(), O_RDONLY);
-				if (fd == -1)
-				{ 
-					status = 404;
-					try
-					{
-						fd = open((_servers[i].getRoot() + "/" + _servers[i].getErrorPage(404)).c_str(), O_RDONLY);
-						if (fd == -1)
-							fd = open("./html/404error.html", O_RDONLY);
-					}
-					catch (std::exception &e)
-					{
-						fd = open("./html/404error.html", O_RDONLY);
-					}
+				filename = _default_root;
+				filename += req.getURN();
+				if (filename == _default_root + "/")
+					filename += "index.html";
+			}
+
+			if (req.checkExtension(route.getCgiExtension()))
+			{
+				CGI cgi;
+
+				cgi.setCGI("/usr/bin/php-cgi");
+				cgi.prepare(req,route,_servers[i],"127.0.0.1");
+				try {
+					cgi.forwardReq();
+					_body_response = cgi.getBody();
+					status = cgi.getStatus();
+					headers = cgi.buildRawHeader();
+				} catch (std::exception &e) {
+					_body_response = HTTPError::buildErrorPage(_servers[i], 
+																status = std::strtol(e.what(), NULL, 10));
 				}
-				char c;
-				while (read(fd, &c, 1) > 0)
-					_body_response += c;
-				close(fd);
+			}
+			else
+			{
+				if (isDir(filename) && route.isListingDirs())
+					_body_response = DirLister().generate_body(filename, req);
+				else if (fileExists(filename))
+				{
+					fd = open(filename.c_str(), O_RDONLY);
+					if (fd == -1)
+						_body_response = HTTPError::buildErrorPage(_servers[i], status = 403);
+					char c;
+					while (read(fd, &c, 1) > 0)
+						_body_response += c;
+					close(fd);
+				}
+				else
+					_body_response = HTTPError::buildErrorPage(_servers[i], status = 404);
+
+			}
 		}
-		}
-		http << "HTTP/1.1" << " " << status << " " << _status_code[status] << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+		http << "HTTP/1.1" << " " << status << " " << HTTPError::getErrorString(status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 	}
 	
 	if (req.getHeaders().find("Connection")->second == " keep-alive")
 	{
-		http << "Connection: keep-alive\r\n" << headers << "\r\n\r\n";
+		http << "Connection: keep-alive\r\n" << headers << "\r\n";
 		_header_response = http.str();
 	}
 	else
 	{
-		http << "Connection: close\r\n" << headers << "\r\n\r\n";
+		http << "Connection: close\r\n" << headers << "\r\n";
 		_header_response = http.str();
 	}
 	

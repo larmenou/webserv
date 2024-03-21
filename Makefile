@@ -22,6 +22,11 @@ SRCS_F		+= $(addprefix $(SRCS_DIR)/CGI/, \
 					CGI \
 					)
 
+
+SRCS_F		+= $(addprefix $(SRCS_DIR)/Error/, \
+					HTTPError \
+					)
+
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Request/, \
 					Request \
 					)
