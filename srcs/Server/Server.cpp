@@ -189,6 +189,15 @@ static bool	isDir(std::string path)
 	return (s.st_mode & S_IFMT) == S_IFDIR;
 }
 
+static bool	fileExists(std::string path)
+{
+	struct stat	s;
+
+	if (stat(path.c_str(), &s) == -1)
+		return false;
+	return true;
+}
+
 void Server::buildResponse(Request req, int i, int client_fd)
 {
 	std::stringstream http;
@@ -253,16 +262,19 @@ void Server::buildResponse(Request req, int i, int client_fd)
 			{
 				if (isDir(filename) && route.isListingDirs())
 					_body_response = DirLister().generate_body(filename, req);
-				else
+				else if (fileExists(filename))
 				{
 					fd = open(filename.c_str(), O_RDONLY);
 					if (fd == -1)
-						_body_response = HTTPError::buildErrorPage(_servers[i], status = 404);
+						_body_response = HTTPError::buildErrorPage(_servers[i], status = 403);
 					char c;
 					while (read(fd, &c, 1) > 0)
 						_body_response += c;
 					close(fd);
 				}
+				else
+					_body_response = HTTPError::buildErrorPage(_servers[i], status = 404);
+
 			}
 		}
 		http << "HTTP/1.1" << " " << status << " " << HTTPError::getErrorString(status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
