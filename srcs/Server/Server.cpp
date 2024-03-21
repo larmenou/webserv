@@ -6,7 +6,7 @@
 /*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/21 16:10:53 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/21 16:52:05 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -358,7 +358,6 @@ void Server::buildResponse(Request req, int i, int client_fd)
 	const Route &route = _servers[i].findRouteFromURN(req.getURN());
 
 	_body_response.clear();
-	std::cout << "Accepts uploads : " << route.getRoute() << std::endl;
 	if (req.getURN() != "/favicon.ico")
 	{	
 		if (_servers[i].getBodySizeLimit() <= req.getBody().size())

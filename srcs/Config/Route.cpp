@@ -38,7 +38,12 @@ Route   &Route::operator=(Route const &a)
 
 bool    Route::operator<(Route const &a) const
 {
-    return _route.length() < a._route.length();
+    size_t  len_a = a._route.length();
+    size_t  len_b = _route.length();
+
+    if (len_a == len_b)
+        return _route < a._route;
+    return len_b <  len_a;
 }
 
 Route::~Route()
