@@ -12,6 +12,8 @@ class RegisteredUsers
 	public:
 		RegisteredUsers();
 		~RegisteredUsers();
+
 		void addDb(std::string &str);
 		const std::map<std::string, std::string> &getDb() const;
+		bool authenticate(std::string str);
 };
