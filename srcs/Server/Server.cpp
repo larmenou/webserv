@@ -159,7 +159,6 @@ void Server::loop()
 							http << "HTTP/1.1" << " " << 400 << " " << HTTPError::getErrorString(400) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
 							sendResponse(client_fd);
 						}
-
 					}
 					close(client_fd);
 					pollfds.erase(pollfds.begin() + i + 1);

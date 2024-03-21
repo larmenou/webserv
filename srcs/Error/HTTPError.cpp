@@ -74,23 +74,22 @@ void    HTTPError::initHTTPErrors()
     _status_codes[511] = "Network Authentication Required"; // RFC 6585
 }
 
-static void buildHead(std::string &ret)
+static void buildHead(std::stringstream &ss)
 {
-    ret += "<!DOCTYPE HTML>\n";
-    ret += "<html>\n";
-    ret += "<head>\n";
-    ret += "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">\n";
-    ret += "<title>Error response</title>\n";
-    ret += "</head>\n";
+    ss << "<!DOCTYPE HTML>\n";
+    ss << "<html>\n";
+    ss << "<head>\n";
+    ss << "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">\n";
+    ss << "<title>Error</title>\n";
+    ss << "</head>\n";
 }
 
 std::string HTTPError::buildErrorPage(ServerConf const &conf, int code)
 {
-    std::string ret;
-
     try
     {
         std::ifstream fs(conf.getErrorPage(code).c_str());
+        std::string ret;
 
         if (!fs.is_open())
             throw std::exception();
@@ -99,12 +98,16 @@ std::string HTTPError::buildErrorPage(ServerConf const &conf, int code)
     }
     catch (...)
     {
-        buildHead(ret);
-        ret += "<body>";
-        ret += HTTPError::getErrorString(code);
-        ret += "</body>\n</html>";
+        std::stringstream ss;
+
+        buildHead(ss);
+        ss << "<body>";
+        ss << "<center>";
+        ss << "<h1>" << code << " " << HTTPError::getErrorString(code) << "</h1><hr>";
+        ss << "webserv</center></body></html>";
+
+        return ss.str();
     }
-    return ret;
 }
 
 std::string HTTPError::getErrorString(int code)
