@@ -103,13 +103,18 @@ static void getURNFromSS(std::stringstream &ss,
 
 void    Request::parseLineHeader(std::string &line)
 {
-    std::vector<std::string> out;
-    split(line, out, ':');
-    if (out.size() != 2)
-        return ;
-    trimstr(out[0]); trimstr(out[1]);
-    strtolower(out[0]);
-    _headers[out[0]] = out[1];
+    size_t  sep_i;
+    std::string value;
+    std::string key;
+
+    sep_i = line.find(":");
+    if (sep_i == std::string::npos)
+        throw std::runtime_error("400");
+    key = line.substr(0, sep_i);
+    value = line.substr(sep_i + 1, std::string::npos);
+    trimstr(key); trimstr(value);
+    strtolower(key);
+    _headers[key] = value;
 }
 
 void    Request::extractGETParams()

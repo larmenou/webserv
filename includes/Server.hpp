@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/21 10:58:01 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/21 14:49:04 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,6 @@
 #include "HTTPError.hpp"
 
 #define BUFF_SIZE 30720
-#define MAX_EVENTS 20
 
 class Server
 {
@@ -43,21 +42,22 @@ class Server
 		std::string 				_body_response;
 		const std::string			_default_root;
 
-		int startServer(int i);
-		void closeServer();
-		void acceptConnection(int &new_socket, int i);
-		void buildResponse(Request req, int i, int client_fd);
-		void sendResponse(int client_fd);
-		void initPollfds(std::vector<pollfd> *pollfds);
-		void addPollfd(std::vector<pollfd> *pollfds, int client_fd, int i);
-		void recvDataAndBuildResp(int client_fd, int i);
-		int buildCgiResp(std::string *headers, Request req, Route route, int i);
-		void buildRedirResp(Route route, int client_fd);
-		int buildBodyResp(std::string filename, Request req, Route route, int i);
-		std::string buildFilename(Route route, Request req);
-		void buildHeaderConnection(std::string headers, Request req, std::stringstream *http);
-
-		static void signalHandler(int);
+		int 			startServer(int i);
+		void 			closeServer();
+		void 			acceptConnection(int &new_socket, int i);
+		void 			buildResponse(Request req, int i, int client_fd);
+		void 			sendResponse(int client_fd);
+		void 			initPollfds(std::vector<pollfd> *pollfds);
+		void 			addPollfd(std::vector<pollfd> *pollfds, int client_fd, int i);
+		void 			recvDataAndBuildResp(int client_fd, int i);
+		
+		int 			buildCgiResp(std::string *headers, Request req, Route route, int i);
+		void 			buildRedirResp(Route route, int client_fd);
+		int 			buildBodyResp(std::string filename, Request req, Route route, int i);
+		std::string 	buildFilename(Route route, Request req);
+		void 			buildHeaderConnection(std::string headers, Request req, std::stringstream *http);
+		std::string 	parseReferer(std::string referer);
+		static void 	signalHandler(int);
 	
 	public:
 		Server(std::vector<ServerConf> servers);
