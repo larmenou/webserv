@@ -57,9 +57,6 @@ class Server
 		std::string buildFilename(Route route, Request req, int i);
 		void buildHeaderConnection(std::string headers, Request req, std::stringstream *http);
 		int	handleUpload(const Request &req, const Route &route, int i);
-		void multipartUpload(const Request &req,
-								const Route &route,
-								const std::string &boundary);
 		void basicUpload(const Request &req, const Route &route);
 		static void signalHandler(int);
 	

@@ -260,14 +260,16 @@ int Server::buildBodyResp(std::string filename, Request req, Route route, int i)
 std::string Server::buildFilename(Route route, Request req, int i)
 {
 	std::string filename;
+	std::string root;
 	
-	if (route.getRoute().length() == 0)
-		filename = _servers[i].getRoot();
+	if (route.getRoot().length() == 0)
+		root = _servers[i].getRoot();
 	else
-		filename = route.getRoot();
-	filename += req.getURN().substr(route.getRoute().length() - 1);
-	if (filename == route.getRoot() + "/")
-		filename += route.getDirFile();
+		root = route.getRoot();
+	filename = root;
+	filename += req.getURN().substr(route.getRoute().length());
+	if (isDir(filename))
+		filename += "/" + route.getDirFile();
 	return (filename);
 }
 
@@ -283,13 +285,6 @@ void Server::buildHeaderConnection(std::string headers, Request req, std::string
 		*http << "Connection: close\r\n" << headers << "\r\n";
 		_header_response = http->str();
 	}
-}
-
-void Server::multipartUpload(const Request &req,
-								const Route &route,
-								const std::string &boundary)
-{	
-	(void) req, (void) route, (void) boundary;
 }
 
 static bool	buildUploadPath(const Request &req, const Route &route, std::string &out)
@@ -321,30 +316,12 @@ void Server::basicUpload(const Request &req, const Route &route)
 
 int	Server::handleUpload(const Request &req, const Route &route, int i)
 {
-	std::vector<std::string>	out;
-	std::string					boundary;
 	std::string					content_type;
-	std::string					type;
-	size_t						semicol;
 	int							status = 200;
 
 	strtolower(content_type = req.findHeader("content-type"));
 	try {
-		semicol = content_type.find(';');
-		type = content_type.substr(0, semicol);
-		if (type == "multipart/form-data")
-		{
-			if (semicol == std::string::npos)
-				throw std::runtime_error("400");
-			semicol = content_type.find("boundary=");
-			if (semicol == std::string::npos 
-				|| semicol == content_type.length() - 1)
-				throw std::runtime_error("400");
-			boundary = content_type.substr(semicol + 9);
-			multipartUpload(req, route, boundary);
-		}
-		else
-			basicUpload(req, route);
+		basicUpload(req, route);
 	} catch (std::exception &e)
 	{
 		_body_response = HTTPError::buildErrorPage(_servers[i], status = std::strtol(e.what(), NULL, 10));
@@ -362,8 +339,10 @@ void Server::buildResponse(Request req, int i, int client_fd)
 
 	_body_response.clear();
 	if (req.getURN() != "/favicon.ico")
-	{	
-		if (_servers[i].getBodySizeLimit() <= req.getBody().size())
+	{
+		if ((req.getMethod() & route.getMethodPerms()) == 0)
+			_body_response = HTTPError::buildErrorPage(_servers[i], status = 405);
+		else if (_servers[i].getBodySizeLimit() <= req.getBody().size())
 		{
 			_body_response = HTTPError::buildErrorPage(_servers[i], status = 413);
 		}
@@ -371,16 +350,13 @@ void Server::buildResponse(Request req, int i, int client_fd)
 			status = handleUpload(req, route, i);
 		else
 		{
-			if (route.getRoot().size() > 0)
-			{
-				filename = buildFilename(route, req, i);
-			}
-			else if (route.getRewrite().second.size() > 0)
+			if (route.getRewrite().second.size() > 0)
 			{
 				buildRedirResp(route, client_fd);
 				return ;
 			}
 
+			filename = buildFilename(route, req, i);
 			if (req.checkExtension(route.getCgiExtension()))
 			{
 				status = buildCgiResp(&headers, req, route, i);
