@@ -29,6 +29,7 @@ SRCS_F		+= $(addprefix $(SRCS_DIR)/Error/, \
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Request/, \
 					Request \
+					Client \
 					)
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Server/, \

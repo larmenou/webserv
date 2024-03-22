@@ -418,7 +418,7 @@ bool    Config::save_path(std::vector<std::string> &dirs, Route &conf)
     return true;
 }
 
-const ServerConf    &Config::getServerFromHostAndIP(std::string host, std::string ip)
+const ServerConf    &Config::getServerFromHostAndIP(std::string host, std::string ip) const
 {
     bool        foundIP;
     size_t      server_idx = 0;
@@ -442,7 +442,7 @@ const ServerConf    &Config::getServerFromHostAndIP(std::string host, std::strin
     return _servers[server_idx];
 }
 
-const std::vector<ServerConf>   &Config::getServers()
+std::vector<ServerConf>   &Config::getServers()
 {
     return _servers;
 }

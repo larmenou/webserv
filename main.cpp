@@ -20,10 +20,9 @@ int main (int ac, char **av)
 		return std::cerr << "Usage : ./webserv <.conf path>" << std::endl, 1;
 	try {
 		Config conf(av[1]);
-		const std::vector<ServerConf>   &servers = conf.getServers();
 
 		HTTPError::initHTTPErrors();
-		Server s = Server(servers);
+		Server s = Server(conf);
 		s.loop();
 	} catch (std::exception &e)
 	{

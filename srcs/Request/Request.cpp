@@ -50,9 +50,8 @@ void strtolower(std::string &str)
         str[i] = std::tolower(str[i]);
 }
 
-Request::Request(std::string &raw_req)
+Request::Request() : _isParsed(false)
 {
-    parseFromRaw(raw_req);
 }
 
 Request::~Request()
@@ -81,24 +80,6 @@ bool    Request::checkExtension(std::string extension) const
     if (id != std::string::npos && id == _urn.size() - extension.size())
         return true;
     return false;
-}
-
-
-
-static void getURNFromSS(std::stringstream &ss,
-                    long        &method,
-                    std::string &urn, 
-                    std::string &http_ver)
-{
-    std::string line;
-    std::string method_str;
-    getlineCRLF(ss, line);
-    std::stringstream l(line);
-    if (!((l >> method_str) && (l >> urn) && (l >> http_ver)))
-        throw std::runtime_error("400");
-    method = Config::str2perm(method_str);
-    if (method == -1)
-        throw std::runtime_error("501");
 }
 
 void    Request::parseLineHeader(std::string &line)
@@ -135,20 +116,66 @@ void    Request::extractGETParams()
     _urn = _urn.substr(0, s);
 }
 
-void    Request::parseFromRaw(std::string &raw)
+static void getURNFromSS(std::stringstream &ss,
+                    long        &method,
+                    std::string &urn, 
+                    std::string &http_ver)
+{
+    std::string line;
+    std::string method_str;
+    getlineCRLF(ss, line);
+    std::stringstream l(line);
+
+    if (!((l >> method_str) && (l >> urn) && (l >> http_ver)))
+        throw std::runtime_error("400");
+    std::cout << method_str << std::endl;
+    method = Config::str2perm(method_str);
+    if (method == -1)
+        throw std::runtime_error("501");
+}
+
+void    Request::parseFromRaw(std::string raw)
 {
     std::stringstream   ss(raw);
     std::string         line;
+
     getURNFromSS(ss, _method, _urn, _http_ver);
     extractGETParams();
     while (getlineCRLF(ss, line))
     {
         if (line.length() == 0)
-            break;
+            break ;
         parseLineHeader(line);
     }
-    if (ss.tellg() != -1)
-        _body = ss.str().substr(ss.tellg());
+}
+
+size_t  Request::receive_header(const char *chunk)
+{
+
+    size_t              start = _raw_header.length();
+    size_t              end;
+
+    _raw_header += chunk;
+    if (_raw_header.length() > MAX_HEADER)
+        throw std::runtime_error("431");
+    end = _raw_header.find("\r\n\r\n");
+    if (end != std::string::npos)
+    {
+        parseFromRaw(_raw_header);
+        return end;
+    }
+    return end - start;
+}
+
+void    Request::reset()
+{
+    _urn.clear();
+    _http_ver.clear();
+    _body.clear();
+    _headers.clear();
+    _getParams.clear();
+    _isParsed = false;
+    _method = 0;
 }
 
 std::ostream    &operator<<(std::ostream &os, const Request &req)
