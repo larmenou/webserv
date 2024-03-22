@@ -26,6 +26,7 @@ void RegisteredUsers::addDb(std::string &str)
 		password = str.substr(pos);
 
 		_db.insert(std::pair<std::string, std::string>(nom, password));
+		std::cout << "size: " << _db.size() << std::endl;
 	}
 }
 
@@ -47,6 +48,7 @@ bool RegisteredUsers::authenticate(std::string str)
 		password = str.substr(pos);
 
 		std::map<std::string, std::string>::const_iterator it = _db.find(nom);
+
 		if (it != _db.end() && it->second == password)
 			return (true);
 	}

@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/21 14:54:12 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/22 08:51:49 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,7 +132,7 @@ void Server::recvDataAndBuildResp(int client_fd, int i)
 			if (_servers[i].getBodySizeLimit() > req.getBody().size())
 			{
 				std::string str = req.getBody();
-				if (parseReferer(req.findHeader("referer")) == "inscription.html")
+				if (parseReferer(req.findHeader("referer")) == "form.html")
 				{
 					_servers[i].addUser(str);
 				}
