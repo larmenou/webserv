@@ -220,7 +220,7 @@ static bool	fileExists(std::string path)
 	return true;
 }
 
-int Server::buildCgiResp(std::string *headers, Request req, Route route, int i)
+int Server::buildCgiResp(std::string *headers, Request const &req, Route route, int i)
 {
 	CGI cgi;
 	int status;
@@ -251,7 +251,7 @@ void Server::buildRedirResp(Route route, int client_fd)
 	send(client_fd, _header_response.c_str(), _header_response.size(), 0);
 }
 
-int Server::buildBodyResp(std::string filename, Request req, Route route, int i)
+int Server::buildBodyResp(std::string filename, Request const &req, Route route, int i)
 {
 	int status = 200;
 	int fd;
@@ -273,7 +273,7 @@ int Server::buildBodyResp(std::string filename, Request req, Route route, int i)
 	return (status);
 }
 
-std::string Server::buildFilename(Route route, Request req, int i)
+std::string Server::buildFilename(Route route, Request const &req, int i)
 {
 	std::string filename;
 	std::string root;
@@ -289,7 +289,7 @@ std::string Server::buildFilename(Route route, Request req, int i)
 	return (filename);
 }
 
-void Server::buildHeaderConnection(std::string headers, Request req, std::stringstream *http)
+void Server::buildHeaderConnection(std::string headers, Request const &req, std::stringstream *http)
 {
 	if (req.getHeaders().find("connection")->second == "keep-alive")
 	{
@@ -320,7 +320,6 @@ void Server::basicUpload(const Request &req, const Route &route)
 	of.open(upload_path.c_str(), std::ios::out);
 	if (!of.is_open())
 	{
-		std::cout << upload_path << std::endl;
 		if (fileExists(upload_path) || isDir(upload_path))
 			throw std::runtime_error("403");
 		else
@@ -333,7 +332,7 @@ void Server::basicUpload(const Request &req, const Route &route)
 int	Server::handleUpload(const Request &req, const Route &route, int i)
 {
 	std::string					content_type;
-	int							status = 200;
+	int							status = 201;
 
 	strtolower(content_type = req.findHeader("content-type"));
 	try {
@@ -345,7 +344,7 @@ int	Server::handleUpload(const Request &req, const Route &route, int i)
 	return status;
 }
 
-void Server::buildResponse(Request req, int i, int client_fd)
+void Server::buildResponse(Request const &req, int i, int client_fd)
 {
 	std::stringstream http;
 	std::string filename;

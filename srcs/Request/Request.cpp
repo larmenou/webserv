@@ -147,7 +147,7 @@ void    Request::parseFromRaw(std::string &raw)
             break;
         parseLineHeader(line);
     }
-    if (ss.tellg() != -1 && _method & POST)
+    if (ss.tellg() != -1)
         _body = ss.str().substr(ss.tellg());
 }
 

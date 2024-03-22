@@ -23,6 +23,8 @@ class Request
         std::map<std::string, std::string>  _getParams;
 
         Request();
+        Request(Request const &a);
+        Request &operator=(Request const &a);
 
         void    parseFromRaw(std::string &raw);
         void    parseLineHeader(std::string &line);
