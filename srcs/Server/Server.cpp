@@ -239,7 +239,7 @@ int Server::buildBodyResp(std::string filename, Request req, Route route, int i)
 {
 	int status = 200;
 	int fd;
-	
+
 	if (isDir(filename) && route.isListingDirs())
 		_body_response = DirLister().generate_body(filename, req);
 	else if (fileExists(filename))
@@ -257,11 +257,14 @@ int Server::buildBodyResp(std::string filename, Request req, Route route, int i)
 	return (status);
 }
 
-std::string Server::buildFilename(Route route, Request req)
+std::string Server::buildFilename(Route route, Request req, int i)
 {
 	std::string filename;
 	
-	filename = route.getRoot();
+	if (route.getRoute().length() == 0)
+		filename = _servers[i].getRoot();
+	else
+		filename = route.getRoot();
 	filename += req.getURN().substr(route.getRoute().length() - 1);
 	if (filename == route.getRoot() + "/")
 		filename += route.getDirFile();
@@ -370,7 +373,7 @@ void Server::buildResponse(Request req, int i, int client_fd)
 		{
 			if (route.getRoot().size() > 0)
 			{
-				filename = buildFilename(route, req);
+				filename = buildFilename(route, req, i);
 			}
 			else if (route.getRewrite().second.size() > 0)
 			{
@@ -391,7 +394,7 @@ void Server::buildResponse(Request req, int i, int client_fd)
 	}
 	
 	buildHeaderConnection(headers, req, &http);
-	
+
 	http.clear();
 	http.str("");
 

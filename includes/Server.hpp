@@ -54,7 +54,7 @@ class Server
 		int buildCgiResp(std::string *headers, Request req, Route route, int i);
 		void buildRedirResp(Route route, int client_fd);
 		int buildBodyResp(std::string filename, Request req, Route route, int i);
-		std::string buildFilename(Route route, Request req);
+		std::string buildFilename(Route route, Request req, int i);
 		void buildHeaderConnection(std::string headers, Request req, std::stringstream *http);
 		int	handleUpload(const Request &req, const Route &route, int i);
 		void multipartUpload(const Request &req,
