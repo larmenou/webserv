@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/22 08:51:49 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/21 17:01:05 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -220,7 +220,7 @@ static bool	fileExists(std::string path)
 	return true;
 }
 
-int Server::buildCgiResp(std::string *headers, Request req, Route route, int i)
+int Server::buildCgiResp(std::string *headers, Request const &req, Route route, int i)
 {
 	CGI cgi;
 	int status;
@@ -251,11 +251,11 @@ void Server::buildRedirResp(Route route, int client_fd)
 	send(client_fd, _header_response.c_str(), _header_response.size(), 0);
 }
 
-int Server::buildBodyResp(std::string filename, Request req, Route route, int i)
+int Server::buildBodyResp(std::string filename, Request const &req, Route route, int i)
 {
 	int status = 200;
 	int fd;
-	
+
 	if (isDir(filename) && route.isListingDirs())
 		_body_response = DirLister().generate_body(filename, req);
 	else if (fileExists(filename))
@@ -273,18 +273,23 @@ int Server::buildBodyResp(std::string filename, Request req, Route route, int i)
 	return (status);
 }
 
-std::string Server::buildFilename(Route route, Request req)
+std::string Server::buildFilename(Route route, Request const &req, int i)
 {
 	std::string filename;
+	std::string root;
 	
-	filename = route.getRoot();
-	filename += req.getURN().substr(route.getRoute().length() - 1);
-	if (filename == route.getRoot() + "/")
-		filename += route.getDirFile();
+	if (route.getRoot().length() == 0)
+		root = _servers[i].getRoot();
+	else
+		root = route.getRoot();
+	filename = root;
+	filename += req.getURN().substr(route.getRoute().length());
+	if (isDir(filename))
+		filename += "/" + route.getDirFile();
 	return (filename);
 }
 
-void Server::buildHeaderConnection(std::string headers, Request req, std::stringstream *http)
+void Server::buildHeaderConnection(std::string headers, Request const &req, std::stringstream *http)
 {
 	if (req.getHeaders().find("connection")->second == "keep-alive")
 	{
@@ -298,7 +303,48 @@ void Server::buildHeaderConnection(std::string headers, Request req, std::string
 	}
 }
 
-void Server::buildResponse(Request req, int i, int client_fd)
+static bool	buildUploadPath(const Request &req, const Route &route, std::string &out)
+{	
+	out = route.getSavePath();
+	out += req.getURN().substr(route.getRoute().length());
+
+	return true;
+}
+
+void Server::basicUpload(const Request &req, const Route &route)
+{
+	std::ofstream	of;
+	std::string		upload_path;
+
+	buildUploadPath(req, route, upload_path);
+	of.open(upload_path.c_str(), std::ios::out);
+	if (!of.is_open())
+	{
+		if (fileExists(upload_path) || isDir(upload_path))
+			throw std::runtime_error("403");
+		else
+			throw std::runtime_error("500");
+	}
+	of << req.getBody();
+	of.close();
+}
+
+int	Server::handleUpload(const Request &req, const Route &route, int i)
+{
+	std::string					content_type;
+	int							status = 201;
+
+	strtolower(content_type = req.findHeader("content-type"));
+	try {
+		basicUpload(req, route);
+	} catch (std::exception &e)
+	{
+		_body_response = HTTPError::buildErrorPage(_servers[i], status = std::strtol(e.what(), NULL, 10));
+	}
+	return status;
+}
+
+void Server::buildResponse(Request const &req, int i, int client_fd)
 {
 	std::stringstream http;
 	std::string filename;
@@ -307,25 +353,25 @@ void Server::buildResponse(Request req, int i, int client_fd)
 	const Route &route = _servers[i].findRouteFromURN(req.getURN());
 
 	_body_response.clear();
-
 	if (req.getURN() != "/favicon.ico")
-	{	
-		if (_servers[i].getBodySizeLimit() <= req.getBody().size())
+	{
+		if ((req.getMethod() & route.getMethodPerms()) == 0)
+			_body_response = HTTPError::buildErrorPage(_servers[i], status = 405);
+		else if (_servers[i].getBodySizeLimit() <= req.getBody().size())
 		{
 			_body_response = HTTPError::buildErrorPage(_servers[i], status = 413);
 		}
+		else if (req.getMethod() == PUT && route.isAcceptingUploads())
+			status = handleUpload(req, route, i);
 		else
 		{
-			if (route.getRoot().size() > 0)
-			{
-				filename = buildFilename(route, req);
-			}
-			else if (route.getRewrite().second.size() > 0)
+			if (route.getRewrite().second.size() > 0)
 			{
 				buildRedirResp(route, client_fd);
 				return ;
 			}
 
+			filename = buildFilename(route, req, i);
 			if (req.checkExtension(route.getCgiExtension()))
 			{
 				status = buildCgiResp(&headers, req, route, i);
@@ -339,7 +385,7 @@ void Server::buildResponse(Request req, int i, int client_fd)
 	}
 	
 	buildHeaderConnection(headers, req, &http);
-	
+
 	http.clear();
 	http.str("");
 

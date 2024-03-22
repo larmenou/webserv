@@ -15,7 +15,7 @@ void    DirLister::list(std::string path)
     _files.clear();
     ds = opendir(path.c_str());
     if (ds == NULL)
-        throw std::exception();
+        throw std::runtime_error("403");
     while(true)
     {
         errno = 0;
@@ -30,7 +30,7 @@ void    DirLister::list(std::string path)
     if (errno != 0)
     {
         closedir(ds);
-        throw std::exception();
+        throw std::runtime_error("500");
     }
     closedir(ds);
 }

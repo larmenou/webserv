@@ -44,7 +44,7 @@ void    trimstr(std::string &str)
     str = tmp;
 }
 
-static void strtolower(std::string &str)
+void strtolower(std::string &str)
 {
     for (size_t i = 0; i < str.length(); i++)
         str[i] = std::tolower(str[i]);
@@ -95,10 +95,10 @@ static void getURNFromSS(std::stringstream &ss,
     getlineCRLF(ss, line);
     std::stringstream l(line);
     if (!((l >> method_str) && (l >> urn) && (l >> http_ver)))
-        throw std::runtime_error("Invalid request.");
+        throw std::runtime_error("400");
     method = Config::str2perm(method_str);
     if (method == -1)
-        throw std::runtime_error("Unsupported method.");
+        throw std::runtime_error("501");
 }
 
 void    Request::parseLineHeader(std::string &line)
@@ -147,7 +147,7 @@ void    Request::parseFromRaw(std::string &raw)
             break;
         parseLineHeader(line);
     }
-    if (ss.tellg() != -1 && _method & POST)
+    if (ss.tellg() != -1)
         _body = ss.str().substr(ss.tellg());
 }
 
