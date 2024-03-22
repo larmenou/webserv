@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include "Route.hpp"
+#include "RegisteredUsers.hpp"
 
 class ServerConf
 {
@@ -21,6 +22,7 @@ class ServerConf
         std::string                 _ip;
         int                         _port;
         size_t                      _body_size_limit;
+        RegisteredUsers             _users;
 
     public :
         ServerConf();
@@ -48,6 +50,9 @@ class ServerConf
         void        setRoot(std::string root);
         void        setIndex(std::string index);
         void        setDirListing(bool state);
+
+        void        addUser(std::string str);
+        bool        authenticateUser(std::string str);
 };
 
 std::ostream    &operator<<(std::ostream &os, const ServerConf &conf);

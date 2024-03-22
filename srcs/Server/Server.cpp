@@ -11,7 +11,6 @@
 /* ************************************************************************** */
 
 #include "Server.hpp"
-#include "RegisteredUsers.hpp"
 #include "CGI.hpp"
 
 void Server::signalHandler(int)
@@ -102,11 +101,20 @@ void Server::addPollfd(std::vector<pollfd> *pollfds, int client_fd, int i)
 	pollfds->insert(pollfds->begin() + i + 1, new_pollfd);
 }
 
+std::string Server::parseReferer(std::string referer)
+{
+	std::vector<std::string> out;
+	split(referer, out, '/');
+	if (out[out.size() - 1].find("html") != std::string::npos)
+		return (out[out.size() - 1]);
+	return ("");
+}
+
 void Server::recvDataAndBuildResp(int client_fd, int i)
 {
 	char buffer[BUFF_SIZE];
 	int bytesReceived;
-	RegisteredUsers users;
+	bool auth;
 	
 	bytesReceived = read(client_fd, buffer, BUFF_SIZE - 1);
 	if (bytesReceived > 0)
@@ -124,7 +132,15 @@ void Server::recvDataAndBuildResp(int client_fd, int i)
 			if (_servers[i].getBodySizeLimit() > req.getBody().size())
 			{
 				std::string str = req.getBody();
-				users.addDb(str);
+				if (parseReferer(req.findHeader("referer")) == "form.html")
+				{
+					_servers[i].addUser(str);
+				}
+				else if (parseReferer(req.findHeader("referer")) == "connexion.html")
+				{
+					auth = _servers[i].authenticateUser(str);
+					std::cout << "auth ? " << auth << std::endl;
+				}
 			}
 			buildResponse(req, i, client_fd);
 		} catch (std::exception &e)

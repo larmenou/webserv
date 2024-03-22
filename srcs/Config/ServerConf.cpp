@@ -93,6 +93,9 @@ void    ServerConf::setRoot(std::string root) { _default_route.setRoot(root); }
 void    ServerConf::setDirListing(bool state) { _default_route.setListDirectory(state); }
 void    ServerConf::setIndex(std::string file) { _default_route.setDirFile(file); }
 
+void    ServerConf::addUser(std::string str) { _users.addDb(str); }
+bool    ServerConf::authenticateUser(std::string str) { return (_users.authenticate(str)); }
+
 std::ostream    &operator<<(std::ostream &os, const ServerConf &conf)
 {
     os << "Server on " << conf.getIP() << ":" << conf.getPort();
