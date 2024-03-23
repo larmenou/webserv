@@ -101,6 +101,7 @@ class Client
         void    receive();
         void    respond();
         bool    isExpired();
+        int     getFD();
         t_clientstate getState();
 };
 

@@ -94,7 +94,7 @@ void Server::initPollfds(std::vector<pollfd> *pollfds)
 	{
         pollfd pfd;
         pfd.fd = _sockets_listen[i];
-        pfd.events = POLLIN | POLLERR;
+        pfd.events = POLLIN | POLLOUT;
         pollfds->push_back(pfd);
     }
 }
@@ -105,10 +105,10 @@ void Server::addPollfd(std::vector<pollfd> *pollfds, int client_fd, int i)
 	(void) pollfds;
 
 	new_pollfd.fd = client_fd;
-	new_pollfd.events = POLLIN;
-	//pollfds->insert(pollfds->begin() + i + 1, new_pollfd);
-	_clients_fds.push_back(new_pollfd);
+	new_pollfd.events = POLLIN | POLLOUT;
+	pollfds->push_back(new_pollfd);
 	_clients.push_back(Client(client_fd, &_conf, _servers[i].getIP()));
+	std::cout << "[" << client_fd << "] New connection (CONN_COUNT="<<  _clients.size() << ")" << std::endl;
 }
 
 std::string Server::parseReferer(std::string referer)
@@ -175,7 +175,7 @@ void Server::loop()
 	initPollfds(&pollfds);
 	while (true)
 	{
-		ready = poll(pollfds.data(), pollfds.size(), 0);
+		ready = poll(pollfds.data(), pollfds.size(), 50);
 		if (ready == -1)
 		{
 			if (errno == EINTR)
@@ -184,39 +184,29 @@ void Server::loop()
 			break ;
 		}
 
-		for (unsigned int i = 0; i < pollfds.size(); i++)
+		for (unsigned int i = 0; i < _servers.size(); i++)
 		{
 			if (pollfds[i].revents & POLLIN)
 			{
 				acceptConnection(client_fd, i);
 				if (client_fd != -1)
 					addPollfd(&pollfds, client_fd, i);
-				std::cout << "New connection (CONN_COUNT="<<  _clients.size() << ")" << std::endl;
 			}
 		}
-		if (_clients_fds.size())
+		for (size_t i = _servers.size(); i < pollfds.size(); i++)
 		{
-			ready = poll(_clients_fds.data(), _clients_fds.size(), 0);
-			if (ready == -1)
+			size_t j = i - _servers.size();
+
+			if (pollfds[i].revents & POLLIN)
+				_clients[j].receive();
+			if (_clients[j].getState() == Responding)
+				_clients[j].respond();
+			if (_clients[j].isExpired())
 			{
-				if (errno == EINTR)
-					break ;
-				std::cout << "Poll failed." << std::endl;
-				break ;
-			}
-			for (size_t i = 0; i < _clients_fds.size(); i++)
-			{
-				if (_clients_fds[i].revents & POLLIN)
-					_clients[i].receive();
-				if (_clients[i].getState() == Responding)
-					_clients[i].respond();
-				if (_clients[i].isExpired())
-				{
-					close(_clients_fds[i].fd);
-					_clients_fds.erase(_clients_fds.begin() + i);
-					_clients.erase(_clients.begin() + i);
-					std::cout << "Closed connection.(CONN_COUNT=" <<  _clients.size() << ")" << std::endl;
-				}
+				std::cout << "[" << pollfds[i].fd << "] Closed connection.(CONN_COUNT=" <<  _clients.size() << ")" << std::endl;
+				close(pollfds[i].fd);
+				pollfds.erase(pollfds.begin() + i);
+				_clients.erase(_clients.begin() + j);
 			}
 		}
 	}

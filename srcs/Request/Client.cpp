@@ -379,9 +379,9 @@ void    Client::sendResponse()
 {
     send(_client_fd, _headers.c_str(), _headers.size(), 0);
     send(_client_fd, _body_response.c_str(), _body_response.size(), 0);
-    if (_req.isKeepAlive())
+    /*if (_req.isKeepAlive())
         reset();
-    else
+    else*/
         _state = Closed;
     std::cout << "------ ["<< time(0) <<"] Server Response sent to client ------\n\n";
 }
@@ -410,4 +410,9 @@ bool    Client::isExpired()
 t_clientstate   Client::getState()
 {
     return _state;
+}
+
+int             Client::getFD()
+{
+    return _client_fd;
 }
