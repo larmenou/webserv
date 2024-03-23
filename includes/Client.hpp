@@ -17,13 +17,14 @@
 #include "HTTPError.hpp"
 
 
-#define REQ_TIMEOUT  5
+#define REQ_TIMEOUT  300
 
 typedef enum e_clientstate
 {
     Header,
     Body,
-    Responding,
+    RespondingHeader,
+    RespondingBody,
     Waiting,
     Closed
 } t_clientstate;
@@ -60,8 +61,11 @@ class Client
 
         std::string         _body_response;
         std::string         _headers;
+
         int                 _fd;
-        ssize_t              _bodyc;
+        ssize_t             _bodyc;
+        ssize_t             _body_len;
+        char                _buff[BUFFER_SIZE];
 
         Client();
 
@@ -81,6 +85,9 @@ class Client
         void    responseRewrite();
         void    responseDelete();
         void    responseError();
+
+        void    sendFile();
+        void    sendHeader();
 
         void    reset();
 

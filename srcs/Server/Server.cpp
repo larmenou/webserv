@@ -175,7 +175,7 @@ void Server::loop()
 	initPollfds(&pollfds);
 	while (true)
 	{
-		ready = poll(pollfds.data(), pollfds.size(), 50);
+		ready = poll(pollfds.data(), pollfds.size(), 0);
 		if (ready == -1)
 		{
 			if (errno == EINTR)
@@ -199,7 +199,9 @@ void Server::loop()
 
 			if (pollfds[i].revents & POLLIN)
 				_clients[j].receive();
-			if (_clients[j].getState() == Responding)
+			if ((pollfds[i].revents & POLLOUT) 
+			&& (_clients[j].getState() == RespondingHeader
+				|| _clients[j].getState() == RespondingBody))
 				_clients[j].respond();
 			if (_clients[j].isExpired())
 			{
