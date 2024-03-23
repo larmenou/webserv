@@ -26,18 +26,10 @@ void    CGI::getQueryString()
 
 void    CGI::getContentLength()
 {
-    std::map<std::string, std::string>::const_iterator ite = _request->getHeaders().find("Content-length");
+    std::stringstream ss;
 
-    _env["CONTENT_LENGTH"] = "";
-    if (ite == _request->getHeaders().end())
-    {
-        std::stringstream ss;
-
-        ss << _request->getBody().length();
-        _env["CONTENT_LENGTH"]  = ss.str();
-        return ;
-    }
-    _env["CONTENT_LENGTH"] = ite->second;
+    ss << _request->getContentLength();
+    _env["CONTENT_LENGTH"] = ss.str();
 }
 
 void    CGI::getRequestMethod()
@@ -92,6 +84,7 @@ void    CGI::setCGI(std::string cgiPath)
 
 
 CGI::CGI() : _env_execve(NULL),
+                _pid(-1),
                 _is_started(false),
                 _bdc(0)
 {
@@ -105,6 +98,10 @@ CGI::~CGI()
             delete _env_execve[i];
         delete[] _env_execve;
     }
+    close(_fds[0]);
+    close(_fds[1]);
+    if (_pid != -1)
+        kill(_pid, SIGSTOP);
 }
 
 void    CGI::prepare(Request const &req,
@@ -216,7 +213,6 @@ static void waitTimeout(pid_t pid)
 void    CGI::parentProc()
 {
     _raw_response.clear();
-    waitTimeout(_pid);
 }
 
 void    CGI::start()
@@ -240,8 +236,7 @@ bool    CGI::receive(const char *chunk, size_t start)
 {
     ssize_t  len = std::strlen(chunk);
 
-    std::cout << chunk + start << std::endl;
-    if (_env["REQUEST_METHOD"] == "POST")
+    if (_request->getMethod())
     {
         _bdc += write(_fds[1], chunk + start, len);
         if (_bdc < 0)
@@ -253,6 +248,28 @@ bool    CGI::receive(const char *chunk, size_t start)
     return false;
 }
 
+void    CGI::parseHeader(std::stringstream &ss)
+{
+    std::string line;
+    std::string value;
+    std::string key;
+    size_t  sep_i;
+
+    while (getlineCRLF(ss, line))
+    {
+        if (line.length() == 0)
+            break;
+        sep_i = line.find(":");
+        if (sep_i == std::string::npos)
+            throw std::runtime_error("400");
+        key = line.substr(0, sep_i);
+        value = line.substr(sep_i + 1, std::string::npos);
+        trimstr(key); trimstr(value);
+        strtolower(key);
+        _headers[key] = value;
+    }
+}
+
 std::string CGI::respond()
 {
     std::vector<std::string> out;
@@ -261,6 +278,7 @@ std::string CGI::respond()
     ssize_t  rd;
     char    c;
 
+    waitTimeout(_pid);
     do {
         rd = read(_fds[0], &c, 1);
         if (rd < 0)
@@ -271,17 +289,7 @@ std::string CGI::respond()
     ss << _raw_response;
     _body.clear();
     _headers.clear();
-    while (getlineCRLF(ss, line))
-    {
-        if (line.length() == 0)
-            break;
-        split(line, out, ':');
-        if (out.size() != 2)
-            continue;
-        trimstr(out[0]); trimstr(out[1]);
-        _headers[out[0]] = out[1];
-        out.clear();
-    }
+    parseHeader(ss);
     if (ss.tellg() != -1)
         _body = ss.str().substr(ss.tellg());
     std::map<std::string, std::string>::const_iterator ite = _headers.find("Status");

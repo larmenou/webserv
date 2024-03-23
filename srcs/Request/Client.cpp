@@ -377,14 +377,13 @@ void    Client::receive()
 
 void    Client::sendResponse()
 {
-    std::cout <<"[" <<  time(0) <<"]" << "Sent :\n" << _headers << std::endl;
     send(_client_fd, _headers.c_str(), _headers.size(), 0);
     send(_client_fd, _body_response.c_str(), _body_response.size(), 0);
     if (_req.isKeepAlive())
         reset();
     else
         _state = Closed;
-    std::cout << "------ Server Response sent to client ------\n\n";
+    std::cout << "------ ["<< time(0) <<"] Server Response sent to client ------\n\n";
 }
 
 void    Client::reset()

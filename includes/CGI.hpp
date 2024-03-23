@@ -42,6 +42,8 @@ class CGI
         void    getHeaders();
         void    parentProc();
         void    childProc();
+
+        void    parseHeader(std::stringstream &ss);
         void    parseRaw();
         char    **buildEnvFromAttr();
 

@@ -50,7 +50,7 @@ void strtolower(std::string &str)
         str[i] = std::tolower(str[i]);
 }
 
-Request::Request() : _isParsed(false)
+Request::Request() : _isParsed(false), _keep_alive(true)
 {
 }
 
@@ -164,8 +164,9 @@ size_t  Request::receive_header(const char *chunk)
     {
         parseFromRaw(_raw_header);
         std::string         clen(findHeader("content-length"));
-
-        _keep_alive = findHeader("connection") == "keep-alive";
+        std::string         conheader(findHeader("connection"));
+        if (conheader == "close")
+            _keep_alive = false;
         if (clen != "")
         {
             trimstr(clen);
@@ -186,6 +187,7 @@ void    Request::reset()
     _headers.clear();
     _getParams.clear();
     _isParsed = false;
+    _keep_alive = true;
     _method = 0;
 }
 

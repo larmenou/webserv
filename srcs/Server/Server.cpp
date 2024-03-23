@@ -94,7 +94,7 @@ void Server::initPollfds(std::vector<pollfd> *pollfds)
 	{
         pollfd pfd;
         pfd.fd = _sockets_listen[i];
-        pfd.events = POLLIN;
+        pfd.events = POLLIN | POLLERR;
         pollfds->push_back(pfd);
     }
 }
@@ -175,7 +175,7 @@ void Server::loop()
 	initPollfds(&pollfds);
 	while (true)
 	{
-		ready = poll(pollfds.data(), pollfds.size(), 50);
+		ready = poll(pollfds.data(), pollfds.size(), 0);
 		if (ready == -1)
 		{
 			if (errno == EINTR)
@@ -188,15 +188,15 @@ void Server::loop()
 		{
 			if (pollfds[i].revents & POLLIN)
 			{
-				std::cout << "Received new connection" << std::endl;
 				acceptConnection(client_fd, i);
 				if (client_fd != -1)
 					addPollfd(&pollfds, client_fd, i);
+				std::cout << "New connection (CONN_COUNT="<<  _clients.size() << ")" << std::endl;
 			}
 		}
 		if (_clients_fds.size())
 		{
-			ready = poll(_clients_fds.data(), _clients_fds.size(), 50);
+			ready = poll(_clients_fds.data(), _clients_fds.size(), 0);
 			if (ready == -1)
 			{
 				if (errno == EINTR)
@@ -215,7 +215,7 @@ void Server::loop()
 					close(_clients_fds[i].fd);
 					_clients_fds.erase(_clients_fds.begin() + i);
 					_clients.erase(_clients.begin() + i);
-					std::cout << "Closed connection. Remaining connections => " << _clients.size() << std::endl;
+					std::cout << "Closed connection.(CONN_COUNT=" <<  _clients.size() << ")" << std::endl;
 				}
 			}
 		}
