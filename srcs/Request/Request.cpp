@@ -58,6 +58,8 @@ Request::~Request()
 {
 }
 
+bool                Request::isKeepAlive() const { return _keep_alive; }
+ssize_t             Request::getContentLength() const { return _content_length; }
 const std::string   Request::getURN() const { return _urn; }
 const std::string   Request::getHTTPVersion() const { return _http_ver; }
 const std::string   Request::getBody() const { return _body; }
@@ -128,7 +130,6 @@ static void getURNFromSS(std::stringstream &ss,
 
     if (!((l >> method_str) && (l >> urn) && (l >> http_ver)))
         throw std::runtime_error("400");
-    std::cout << method_str << std::endl;
     method = Config::str2perm(method_str);
     if (method == -1)
         throw std::runtime_error("501");
@@ -162,7 +163,17 @@ size_t  Request::receive_header(const char *chunk)
     if (end != std::string::npos)
     {
         parseFromRaw(_raw_header);
-        return end;
+
+        std::string         clen(findHeader("content-length"));
+
+        _keep_alive = findHeader("connection") == "keep-alive";
+        if (clen != "")
+        {
+            trimstr(clen);
+            _content_length = std::strtoul(clen.c_str(), NULL, 10);
+        }
+        std::cout << "Received :\n" << _raw_header << std::endl;
+        return end + 4;
     }
     return end - start;
 }

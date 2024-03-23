@@ -175,7 +175,7 @@ void Server::loop()
 	initPollfds(&pollfds);
 	while (true)
 	{
-		ready = poll(pollfds.data(), pollfds.size(), 0);
+		ready = poll(pollfds.data(), pollfds.size(), 50);
 		if (ready == -1)
 		{
 			if (errno == EINTR)
@@ -196,7 +196,7 @@ void Server::loop()
 		}
 		if (_clients_fds.size())
 		{
-			ready = poll(_clients_fds.data(), _clients_fds.size(), 0);
+			ready = poll(_clients_fds.data(), _clients_fds.size(), 50);
 			if (ready == -1)
 			{
 				if (errno == EINTR)
@@ -206,16 +206,16 @@ void Server::loop()
 			}
 			for (size_t i = 0; i < _clients_fds.size(); i++)
 			{
-				std::cout << _clients[i].getState() << std::endl;
-				if (_clients_fds[i].revents & POLLIN)
-					_clients[i].receive();
 				if (_clients[i].getState() == Responding)
 					_clients[i].respond();
+				if (_clients_fds[i].revents & POLLIN)
+					_clients[i].receive();
 				if (_clients[i].isExpired())
 				{
 					close(_clients_fds[i].fd);
 					_clients_fds.erase(_clients_fds.begin() + i);
 					_clients.erase(_clients.begin() + i);
+					std::cout << "Closed connection. Remaining connections => " << _clients.size() << std::endl;
 				}
 			}
 		}

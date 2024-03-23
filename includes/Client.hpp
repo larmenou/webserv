@@ -61,6 +61,7 @@ class Client
         std::string         _body_response;
         std::string         _headers;
         int                 _fd;
+        ssize_t              _bodyc;
 
         Client();
 

@@ -71,16 +71,14 @@ void    Client::initServerRoute()
 
 void    Client::buildHeaderConnection(std::stringstream &http)
 {
-    if (_req.getHeaders().find("connection")->second == "keep-alive")
-    {
-        http << "Connection: keep-alive\r\n" << _headers << "\r\n";
-        _headers = http.str();
-    }
+    std::string connection;
+
+    if (_req.isKeepAlive())
+        connection = "keep-alive";
     else
-    {
-        http << "Connection: keep-alive\r\n" << _headers << "\r\n";
-        _headers = http.str();
-    }
+        connection = "close";
+    http << "Connection: "<< connection << "\r\n" << _headers << "\r\n";
+    _headers = http.str();
 }
 
 void    Client::determineRequestType()
@@ -89,7 +87,7 @@ void    Client::determineRequestType()
     {
         _type = Error;
         _status = 405;
-        std::cout << "Error" << std::endl;
+        _state = Responding;
     }
     else if (_req.checkExtension(_route.getCgiExtension()))
         _type = Cgi;
@@ -154,18 +152,26 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
     std::stringstream   http;
 
     _status = 200;
-    if (isDir(filename) && _route.isListingDirs())
-        _body_response = DirLister().generate_body(filename, _req);
-    else if (fileExists(filename))
+    try
     {
-        _fd = open(filename.c_str(), O_RDONLY);
-        if (_fd == -1)
-            _body_response = HTTPError::buildErrorPage(_server, _status = 403);
+        if (isDir(filename) && _route.isListingDirs())
+            _body_response = DirLister().generate_body(filename, _req);
+        else if (fileExists(filename))
+        {
+            _fd = open(filename.c_str(), O_RDONLY);
+            if (_fd == -1)
+                throw std::runtime_error("403");
+        }
+        else
+            throw std::runtime_error("404");
     }
-    else
-        _body_response = HTTPError::buildErrorPage(_server, _status = 404);
-    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-    buildHeaderConnection(http);
+    catch(const std::exception& e)
+    {
+        _type = Error;
+        _status = std::strtol(e.what(), NULL, 10);
+        _state = Responding;
+        return ;
+    }
     _state = Responding;
 }
 
@@ -173,59 +179,114 @@ void    Client::bodyError(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
     _body_response = HTTPError::buildErrorPage(_server, _status);
+    _state = Responding;
 }
 
 void    Client::bodyCgi(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
-	CGI cgi;
-	int status;
+    CGI cgi;
+    int status;
+    std::stringstream   http;
 
-	cgi.setCGI("/usr/bin/php-cgi");
-	cgi.prepare(_req, _route, _server, "127.0.0.1");
-	try {
-		cgi.forwardReq();
-		_body_response = cgi.getBody();
-		status = cgi.getStatus();
-		_headers = cgi.buildRawHeader();
-	} catch (std::exception &e) {
-		_body_response = HTTPError::buildErrorPage(_server, 
-						status = std::strtol(e.what(), NULL, 10));
-	}
+    cgi.setCGI("/usr/bin/php-cgi");
+    cgi.prepare(_req, _route, _server, "127.0.0.1");
+    try {
+        cgi.forwardReq();
+        _body_response = cgi.getBody();
+        status = cgi.getStatus();
+        _headers = cgi.buildRawHeader();
+    } catch (std::exception &e) {
+        _status = std::strtol(e.what(), NULL, 10);
+        _type = Error;
+        _state = Responding;
+        return ;
+    }
+    http << "HTTP/1.1" << " " << status << " " << HTTPError::getErrorString(status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+    buildHeaderConnection(http);
     _state = Responding;
 }
 
 void    Client::bodyRewrite(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
-	std::stringstream http;
-	
-	_status = _route.getRedirCode();
-	http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nLocation: " << _route.getRewrite().second << "\r\nContent-Length: 0\r\n";
-	_headers = http.str();
+
+    _state = Responding;
 }
 
 void    Client::bodyDelete(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
 
-    _status = Responding;
+    /*TODO : Implement delete method*/
+    _state = Responding;
+}
+
+static bool	buildUploadPath(const Request &req, const Route &route, std::string &out)
+{
+    out = route.getSavePath();
+    out += req.getURN().substr(route.getRoute().length());
+    if (out.length() == route.getRoute().length())
+        return false;
+    return true;
 }
 
 void    Client::bodyPut(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
+    _status = 201;
 
-    _status = Responding;
+    try {
+        std::string     upload_path;
+        std::string     bytes(chunk);
+        ssize_t          write_size;
+
+        if (!buildUploadPath(_req, _route, upload_path))
+            throw std::runtime_error("404");
+        if (_fd < 0)
+        {
+            _bodyc = 0;
+            _fd = open(upload_path.c_str(), O_WRONLY | O_CREAT, 0655);
+            if (_fd < 0)
+            {
+                if (fileExists(upload_path) || isDir(upload_path))
+                    throw std::runtime_error("403");
+                else
+                    throw std::runtime_error("500");
+            }
+        }
+        if (_start != 0)
+            bytes.erase(bytes.begin(), bytes.begin() + start);
+        write_size = bytes.size();
+        _bodyc += write(_fd, bytes.c_str(), write_size);
+        if (_bodyc < 0)
+            throw std::runtime_error("500");
+        if (_bodyc >= _req.getContentLength())
+            _state = Responding;
+    } catch (std::exception &e)
+    {
+        _type = Error;
+        _status = std::strtol(e.what(), NULL, 10);
+        _state = Responding;
+        return ;
+    }
 }
 
 void    Client::responsePostGet()
 {
+    std::stringstream http;
+
+    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+    buildHeaderConnection(http);
     sendResponse();
 }
 
 void    Client::responsePut()
 {
+    std::stringstream http;
+
+    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+    buildHeaderConnection(http);
     sendResponse();
 }
 
@@ -236,6 +297,13 @@ void    Client::responseCgi()
 
 void    Client::responseRewrite()
 {
+    std::stringstream http;
+    
+    _status = _route.getRedirCode();
+    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nLocation: " << _route.getRewrite().second << "\r\nContent-Length: 0\r\n";
+    _headers = http.str();
+
+    _state = Responding;
     sendResponse();
 }
 
@@ -246,12 +314,16 @@ void    Client::responseDelete()
 
 void    Client::responseError()
 {
+    std::stringstream http;
+
+    _body_response = HTTPError::buildErrorPage(_server, _status);
+    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+    buildHeaderConnection(http);
     sendResponse();
 }
 
 void    Client::processBody(char const *chunk, size_t start)
 {
-    std::cout << "_type : " << _type << "; size" << _body_functions.size() << std::endl;
    ((this)->*(_body_functions[_type]))(chunk, start);
 }
 
@@ -266,6 +338,8 @@ void    Client::receive()
     size_t      body_start = 0;
     char        chunk[BUFFER_SIZE];
 
+    if (_state == Responding)
+        return ;
     ret = read(_client_fd, chunk, BUFFER_SIZE - 1);
     if (ret < 0)
         return ;
@@ -284,8 +358,6 @@ void    Client::receive()
         {
             initServerRoute();
             determineRequestType();
-            std::cout << "type:" << _type << std::endl;
-            std::cout << "request method:" << _req.getMethod() << std::endl;
             _state = Body;
         }
     }
@@ -297,14 +369,13 @@ void    Client::receive()
 
 void    Client::sendResponse()
 {
-    std::cout << "headers:\n" << _headers << std::endl;
-    std::cout << "body:\n" << _body_response << std::endl;
+    std::cout << "Sent :\n" << _headers << std::endl;
     send(_client_fd, _headers.c_str(), _headers.size(), 0);
     send(_client_fd, _body_response.c_str(), _body_response.size(), 0);
-    /*if (_keep_alive)
+    if (_req.isKeepAlive())
         _state = Waiting;
-    else*/
-    _state = Closed;
+    else
+        _state = Closed;
     std::cout << "------ Server Response sent to client ------\n\n";
 }
 

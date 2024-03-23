@@ -22,9 +22,11 @@ class Request
         std::string                         _body;
         std::string                         _raw_header;
         std::map<std::string, std::string>  _headers;
+        ssize_t                             _content_length;
 
         std::map<std::string, std::string>  _getParams;
         bool                                _isParsed;
+        bool                                _keep_alive;
 
         Request(Request const &a);
         Request &operator=(Request const &a);
@@ -37,6 +39,8 @@ class Request
         Request();
         ~Request();
 
+        ssize_t              getContentLength() const;
+        bool                isKeepAlive() const;
         long                getMethod() const;
         const std::string   getURN() const;
         const std::string   getHTTPVersion() const;
