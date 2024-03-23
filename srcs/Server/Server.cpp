@@ -260,7 +260,7 @@ int Server::buildCgiResp(std::string *headers, Request const &req, Route route, 
 	cgi.setCGI("/usr/bin/php-cgi");
 	cgi.prepare(req,route,_servers[i],"127.0.0.1");
 	try {
-		cgi.forwardReq();
+		cgi.start();
 		_body_response = cgi.getBody();
 		status = cgi.getStatus();
 		*headers = cgi.buildRawHeader();

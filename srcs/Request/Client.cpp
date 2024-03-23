@@ -167,9 +167,9 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
     }
     catch(const std::exception& e)
     {
-        _type = Error;
+        _type   = Error;
         _status = std::strtol(e.what(), NULL, 10);
-        _state = Responding;
+        _state  = Responding;
         return ;
     }
     _state = Responding;
@@ -178,8 +178,8 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
 void    Client::bodyError(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
-    _body_response = HTTPError::buildErrorPage(_server, _status);
-    _state = Responding;
+    _body_response  = HTTPError::buildErrorPage(_server, _status);
+    _state          = Responding;
 }
 
 void    Client::bodyCgi(char const *chunk, size_t start)
@@ -187,20 +187,22 @@ void    Client::bodyCgi(char const *chunk, size_t start)
     (void) chunk; (void) start;
     std::stringstream   http;
 
-    _cgi.setCGI(_route.getCgiPath());
-    _cgi.prepare(_req, _route, _server, "127.0.0.1");
+
     try {
-        _cgi.forwardReq();
-        _body_response = _cgi.getBody();
-        _status = _cgi.getStatus();
-        _headers = _cgi.buildRawHeader();
+        if (!_cgi.isStarted())
+        {
+            _cgi.setCGI(_route.getCgiPath());
+            _cgi.prepare(_req, _route, _server, "127.0.0.1");
+            _cgi.start();
+        }
+        if (_cgi.receive(chunk, start))
+            _state = Responding;
     } catch (std::exception &e) {
         _status = std::strtol(e.what(), NULL, 10);
         _type = Error;
         _state = Responding;
         return ;
     }
-    _state = Responding;
 }
 
 void    Client::bodyRewrite(char const *chunk, size_t start)
@@ -235,7 +237,7 @@ void    Client::bodyPut(char const *chunk, size_t start)
     try {
         std::string     upload_path;
         std::string     bytes(chunk);
-        ssize_t          write_size;
+        ssize_t         write_size;
 
         if (!buildUploadPath(_req, _route, upload_path))
             throw std::runtime_error("404");
@@ -270,8 +272,15 @@ void    Client::bodyPut(char const *chunk, size_t start)
 
 void    Client::responsePostGet()
 {
-    std::stringstream http;
+    std::stringstream   http;
+    char                buff[BUFFER_SIZE];
+    ssize_t             rd;
 
+    while ((rd = read(_fd, buff, BUFFER_SIZE - 1)) > 0)
+    {
+        buff[rd] = 0;
+        _body_response += buff;
+    }
     http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
     buildHeaderConnection(http);
     sendResponse();
@@ -290,7 +299,10 @@ void    Client::responseCgi()
 {
     std::stringstream http;
 
+    _body_response  = _cgi.respond();
+    _status         = _cgi.getStatus();
     http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+    _headers        = _cgi.buildRawHeader();
     buildHeaderConnection(http);
     sendResponse();
 }
@@ -302,8 +314,6 @@ void    Client::responseRewrite()
     _status = _route.getRedirCode();
     http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nLocation: " << _route.getRewrite().second << "\r\nContent-Length: 0\r\n";
     _headers = http.str();
-
-    _state = Responding;
     sendResponse();
 }
 
