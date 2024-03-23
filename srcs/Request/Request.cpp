@@ -163,7 +163,6 @@ size_t  Request::receive_header(const char *chunk)
     if (end != std::string::npos)
     {
         parseFromRaw(_raw_header);
-
         std::string         clen(findHeader("content-length"));
 
         _keep_alive = findHeader("connection") == "keep-alive";

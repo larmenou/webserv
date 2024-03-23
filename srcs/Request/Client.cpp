@@ -98,9 +98,7 @@ void    Client::determineRequestType()
     else if (_req.getMethod() == POST)
         _type = Post;
     else if (_req.getMethod() == GET)
-    {
         _type = Get;
-    }
     else if (_req.getMethod() == DELETE)
         _type = Delete;
     else
@@ -150,6 +148,7 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
     (void) chunk; (void) start;
     std::string         filename(buildFilename());
     std::stringstream   http;
+    std::string         bytes;
 
     _status = 200;
     try
@@ -164,6 +163,7 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
         }
         else
             throw std::runtime_error("404");
+        
     }
     catch(const std::exception& e)
     {
@@ -185,25 +185,21 @@ void    Client::bodyError(char const *chunk, size_t start)
 void    Client::bodyCgi(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
-    CGI cgi;
-    int status;
     std::stringstream   http;
 
-    cgi.setCGI("/usr/bin/php-cgi");
-    cgi.prepare(_req, _route, _server, "127.0.0.1");
+    _cgi.setCGI(_route.getCgiPath());
+    _cgi.prepare(_req, _route, _server, "127.0.0.1");
     try {
-        cgi.forwardReq();
-        _body_response = cgi.getBody();
-        status = cgi.getStatus();
-        _headers = cgi.buildRawHeader();
+        _cgi.forwardReq();
+        _body_response = _cgi.getBody();
+        _status = _cgi.getStatus();
+        _headers = _cgi.buildRawHeader();
     } catch (std::exception &e) {
         _status = std::strtol(e.what(), NULL, 10);
         _type = Error;
         _state = Responding;
         return ;
     }
-    http << "HTTP/1.1" << " " << status << " " << HTTPError::getErrorString(status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-    buildHeaderConnection(http);
     _state = Responding;
 }
 
@@ -292,6 +288,10 @@ void    Client::responsePut()
 
 void    Client::responseCgi()
 {
+    std::stringstream http;
+
+    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+    buildHeaderConnection(http);
     sendResponse();
 }
 

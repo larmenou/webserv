@@ -403,9 +403,10 @@ bool    Config::dir_default(std::vector<std::string> &dirs, Route &conf)
 }
 bool    Config::cgi_extension(std::vector<std::string> &dirs, Route &conf)
 {
-    if (dirs.size() != 2)
+    if (dirs.size() != 3)
         return false;
     conf.setCgiExtension(dirs[1]);
+    conf.setCgiPath(dirs[2]);
     return true;
 }
 

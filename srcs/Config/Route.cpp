@@ -32,6 +32,7 @@ Route   &Route::operator=(Route const &a)
     _fileSavePath = a._fileSavePath;
     _route = a._route;
     _acceptUploads = a._acceptUploads;
+    _cgiPath = a._cgiPath;
 
     return *this;
 }
@@ -54,6 +55,7 @@ const std::string   &Route::getRoute() const { return _route; }
 const std::string   &Route::getRoot() const { return _root;}
 const std::string   &Route::getDirFile() const { return _isDirFile; }
 const std::string   &Route::getCgiExtension() const { return _cgiFileExtension; }
+const std::string   &Route::getCgiPath() const { return _cgiPath; }
 const std::string   &Route::getSavePath() const { return _fileSavePath; }
 const std::pair<std::string, std::string> &Route::getRewrite() const { return _rewrite; }
 long    Route::getRedirCode() const { return _redir_code; }
@@ -74,6 +76,7 @@ void    Route::setRoute(std::string route) {
 void    Route::setRoot(std::string root) { _root = root; }
 void    Route::setDirFile(std::string dirFile) {_isDirFile = dirFile; }
 void    Route::setCgiExtension(std::string getCgiExtension) { _cgiFileExtension = getCgiExtension; }
+void    Route::setCgiPath(std::string cgiPath) { _cgiPath = cgiPath; }
 void    Route::setSavePath(std::string savePath) { _fileSavePath = savePath; }
 void    Route::setRedirection(std::string from, std::string to, long code)
 {
