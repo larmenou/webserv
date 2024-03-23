@@ -299,8 +299,8 @@ bool    CGI::isStarted() const {
 
 int     CGI::getStatus() const
 {
-    std::map<std::string, std::string>::const_iterator ite 
-        = _headers.find("Status");
+    std::map<std::string, std::string>::const_iterator
+    ite = _headers.find("Status");
 
     if (ite == _headers.end())
         return 200;

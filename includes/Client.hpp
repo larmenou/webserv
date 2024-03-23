@@ -17,7 +17,7 @@
 #include "HTTPError.hpp"
 
 
-#define REQ_TIMEOUT  300
+#define REQ_TIMEOUT  5
 
 typedef enum e_clientstate
 {
@@ -48,7 +48,7 @@ class Client
         t_clientstate       _state;
         t_reqtype           _type;
         int                 _status;
-        clock_t             _start;
+        time_t              _start;
         Request             _req;
         CGI                 _cgi;
         ServerConf          _server;
@@ -81,6 +81,8 @@ class Client
         void    responseRewrite();
         void    responseDelete();
         void    responseError();
+
+        void    reset();
 
         std::string buildFilename();
 

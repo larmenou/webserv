@@ -6,7 +6,7 @@ Client::Client(int client_fd,
                 :   _client_fd(client_fd),
                     _state(Header),
                     _type(Error),
-                    _start(clock()),
+                    _start(time(0)),
                     _conf(conf),
                     _ip(ip),
                     _fd(-1)
@@ -348,8 +348,6 @@ void    Client::receive()
     size_t      body_start = 0;
     char        chunk[BUFFER_SIZE];
 
-    if (_state == Responding)
-        return ;
     ret = read(_client_fd, chunk, BUFFER_SIZE - 1);
     if (ret < 0)
         return ;
@@ -379,19 +377,31 @@ void    Client::receive()
 
 void    Client::sendResponse()
 {
-    std::cout << "Sent :\n" << _headers << std::endl;
+    std::cout <<"[" <<  time(0) <<"]" << "Sent :\n" << _headers << std::endl;
     send(_client_fd, _headers.c_str(), _headers.size(), 0);
     send(_client_fd, _body_response.c_str(), _body_response.size(), 0);
     if (_req.isKeepAlive())
-        _state = Waiting;
+        reset();
     else
         _state = Closed;
     std::cout << "------ Server Response sent to client ------\n\n";
 }
 
+void    Client::reset()
+{
+    _body_response.clear();
+    _headers.clear();
+    _req.reset();
+    _bodyc = 0;
+    _state = Header;
+    _type = Error;
+    _start = time(0);
+    _fd = -1;
+}
+
 bool    Client::isExpired()
 {
-    if (((clock() - _start) / CLOCKS_PER_SEC) > REQ_TIMEOUT)
+    if (difftime(time(0), _start) > REQ_TIMEOUT)
         return true;
     if (_state == Closed)
         return true;

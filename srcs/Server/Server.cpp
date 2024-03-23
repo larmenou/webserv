@@ -206,10 +206,10 @@ void Server::loop()
 			}
 			for (size_t i = 0; i < _clients_fds.size(); i++)
 			{
-				if (_clients[i].getState() == Responding)
-					_clients[i].respond();
 				if (_clients_fds[i].revents & POLLIN)
 					_clients[i].receive();
+				if (_clients[i].getState() == Responding)
+					_clients[i].respond();
 				if (_clients[i].isExpired())
 				{
 					close(_clients_fds[i].fd);

@@ -179,6 +179,7 @@ size_t  Request::receive_header(const char *chunk)
 
 void    Request::reset()
 {
+    _raw_header.clear();
     _urn.clear();
     _http_ver.clear();
     _body.clear();
