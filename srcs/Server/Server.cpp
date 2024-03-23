@@ -175,7 +175,7 @@ void Server::loop()
 	initPollfds(&pollfds);
 	while (true)
 	{
-		ready = poll(pollfds.data(), pollfds.size(), 0);
+		ready = poll(pollfds.data(), pollfds.size(), -1);
 		if (ready == -1)
 		{
 			if (errno == EINTR)
@@ -184,13 +184,16 @@ void Server::loop()
 			break ;
 		}
 
-		for (unsigned int i = 0; i < _servers.size(); i++)
+		if (_clients.size() < 1000)
 		{
-			if (pollfds[i].revents & POLLIN)
+			for (unsigned int i = 0; i < _servers.size(); i++)
 			{
-				acceptConnection(client_fd, i);
-				if (client_fd != -1)
-					addPollfd(&pollfds, client_fd, i);
+				if (pollfds[i].revents & POLLIN)
+				{
+					acceptConnection(client_fd, i);
+					if (client_fd != -1)
+						addPollfd(&pollfds, client_fd, i);
+				}
 			}
 		}
 		for (size_t i = _servers.size(); i < pollfds.size(); i++)
@@ -199,9 +202,8 @@ void Server::loop()
 
 			if (pollfds[i].revents & POLLIN)
 				_clients[j].receive();
-			if ((pollfds[i].revents & POLLOUT) 
-			&& (_clients[j].getState() == RespondingHeader
-				|| _clients[j].getState() == RespondingBody))
+			if ((pollfds[i].revents & POLLOUT)
+			&& (_clients[j].getState()))
 				_clients[j].respond();
 			if (_clients[j].isExpired())
 			{
@@ -219,7 +221,7 @@ void Server::acceptConnection(int &new_socket, int i)
 	sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
 	new_socket = accept(_sockets_listen[i], (sockaddr *)&client_addr, &client_len);
-	if (new_socket < 0)
+	if (new_socket == -1)
 	{
 		std::cout << "Server failed to accept incoming connection" << std::endl;
 		exit(1);

@@ -140,7 +140,7 @@ std::string Client::buildFilename()
 {
 	std::string filename;
 	std::string root;
-	
+
 	if (_route.getRoot().length() == 0)
 		root = _server.getRoot();
 	else
@@ -163,7 +163,10 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
     try
     {
         if (isDir(filename) && _route.isListingDirs())
+        {
             _body_response = DirLister().generate_body(filename, _req);
+            _body_len = _body_response.length();
+        }
         else if (fileExists(filename))
         {
             _fd = open(filename.c_str(), O_RDONLY);
@@ -263,7 +266,7 @@ void    Client::bodyPut(char const *chunk, size_t start)
                     throw std::runtime_error("500");
             }
         }
-        if (_start != 0)
+        if (start != 0)
             bytes.erase(bytes.begin(), bytes.begin() + start);
         write_size = bytes.size();
         _bodyc += write(_fd, bytes.c_str(), write_size);
@@ -394,7 +397,7 @@ void    Client::receive()
     char        chunk[BUFFER_SIZE];
 
     ret = read(_client_fd, chunk, BUFFER_SIZE - 1);
-    if (ret < 0)
+    if (ret <= 0)
         return ;
     chunk[ret] = 0;
     if (_state == Header)
@@ -416,8 +419,6 @@ void    Client::receive()
     }
     if (_state == Body)
         processBody(chunk, body_start);
-    if (_state == RespondingHeader)
-        respond();
 }
 
 void    Client::sendResponse()

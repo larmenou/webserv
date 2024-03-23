@@ -17,7 +17,7 @@
 #include "HTTPError.hpp"
 
 
-#define REQ_TIMEOUT  300
+#define REQ_TIMEOUT  10
 
 typedef enum e_clientstate
 {
