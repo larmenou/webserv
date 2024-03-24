@@ -303,6 +303,7 @@ void    Client::sendFile()
     {
         while (read(_fd, &buff, 1) > 0)
             _body_response += buff;
+        close(_fd);
     }
     _bodyc += send(_client_fd,
                     _body_response.c_str() + _bodyc, 
