@@ -31,7 +31,13 @@
 #include "HTTPError.hpp"
 #include "Client.hpp"
 
-#define BUFF_SIZE 30720
+#ifndef BUFF_SIZE
+# define BUFF_SIZE 30720
+#endif
+
+#ifndef MAX_CLIENTS
+# define MAX_CLIENTS 1
+#endif
 
 class Server
 {

@@ -90,7 +90,7 @@ CGI::CGI() : _env_execve(NULL),
 {
 }
 
-CGI::~CGI()
+void    CGI::freeExecEnv()
 {
     if (_env_execve != NULL)
     {
@@ -98,6 +98,12 @@ CGI::~CGI()
             delete _env_execve[i];
         delete[] _env_execve;
     }
+    _env_execve = NULL;
+}
+
+CGI::~CGI()
+{
+    freeExecEnv();
     close(_fds[0]);
     close(_fds[1]);
     if (_pid != -1)
@@ -217,7 +223,6 @@ void    CGI::parentProc()
 
 void    CGI::start()
 {
-    _headers.clear();
     if (_env.size() == 0)
         throw std::runtime_error("500");
     if (pipe(_fds) < 0)
@@ -229,14 +234,30 @@ void    CGI::start()
         childProc();
     else
         parentProc();
+    _headers.clear();
     _env.clear();
+}
+
+void    CGI::closeCGI()
+{
+    freeExecEnv();
+    close(_fds[0]);
+    close(_fds[1]);
+    if (_pid != -1)
+        kill(_pid, SIGSTOP);
+    _env.clear();
+    _headers.clear();
+    _body.clear();
+    _cgi_path.clear();
+    _raw_response.clear();
+    _is_started = false;
 }
 
 bool    CGI::receive(const char *chunk, size_t start)
 {
     ssize_t  len = std::strlen(chunk);
 
-    if (_request->getMethod())
+    if (_request->getMethod() & POST)
     {
         _bdc += write(_fds[1], chunk + start, len);
         if (_bdc < 0)

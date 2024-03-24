@@ -200,7 +200,6 @@ void    Client::bodyCgi(char const *chunk, size_t start)
     (void) chunk; (void) start;
     std::stringstream   http;
 
-
     try {
         if (!_cgi.isStarted())
         {
@@ -347,12 +346,33 @@ void    Client::responseCgi()
 {
     std::stringstream http;
 
-    _body_response  = _cgi.respond();
-    _status         = _cgi.getStatus();
-    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-    _headers        = _cgi.buildRawHeader();
-    buildHeaderConnection(http);
-    sendResponse();
+    if (_state == RespondingHeader)
+    {
+        if (_headers.size() == 0)
+        {
+            _headers = _cgi.buildRawHeader();
+            _body_response = _cgi.respond();
+            _status = _cgi.getStatus();
+            _body_len = _body_response.size();
+            http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Length: " << _body_len << "\r\n";
+            buildHeaderConnection(http);
+            _bodyc = 0;
+        }
+        sendHeader();
+    }
+    if (_state == RespondingBody)
+    {
+        _bodyc += send(_client_fd,
+                    _body_response.c_str() + _bodyc, 
+                    _body_response.size() - _bodyc,
+                    0);
+        if (_bodyc >= (ssize_t)_body_response.size())
+        {
+            _bodyc = 0;
+            _state = Closed;
+            reset();
+        }
+    }
 }
 
 void    Client::responseRewrite()
@@ -437,6 +457,7 @@ void    Client::reset()
     _body_response.clear();
     _headers.clear();
     _req.reset();
+    _cgi.closeCGI();
     _bodyc = 0;
     _state = Header;
     _type = Error;

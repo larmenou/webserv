@@ -38,7 +38,7 @@ Server::Server(Config &conf) : 	_conf(conf),
 
 		if (startServer(i) != 0)
 		{
-			std::cout << "Failed to start server with PORT: " << ntohs(_socketAddresses[i].sin_port) << std::endl;
+			std::cerr << "Failed to start server with PORT: " << ntohs(_socketAddresses[i].sin_port) << std::endl;
 			exit(1);
 		}
 	}
@@ -62,21 +62,21 @@ int Server::startServer(int i)
 	}
 	if (socket_listen < 0)
 	{
-		std::cout << "Cannot create socket" << std::endl;
+		std::cerr << "Cannot create socket" << std::endl;
 		return (1);
 	}
 	if (bind(socket_listen, (sockaddr *)&_socketAddresses[i], sizeof(_socketAddresses[i])) < 0)
 	{
-		std::cout << "Cannot connect socket to address" << std::endl;
+		std::cerr << "Cannot connect socket to address" << std::endl;
 		return (1);
 	}
 	if (listen(socket_listen, 20) < 0)
 	{
-		std::cout << "Socket listen failed" << std::endl;
+		std::cerr << "Socket listen failed" << std::endl;
 		exit(1);
 	}
 
-	std::cout << "\n*** Listening on ADDRESS: " << _conf.getServers()[i].getIP() << " PORT: " << _conf.getServers()[i].getPort() << " ***\n\n";
+	std::cerr << "\n*** Listening on ADDRESS: " << _conf.getServers()[i].getIP() << " PORT: " << _conf.getServers()[i].getPort() << " ***\n\n";
 	
 	_sockets_listen.push_back(socket_listen);
 	return (0);
@@ -108,7 +108,7 @@ void Server::addPollfd(std::vector<pollfd> *pollfds, int client_fd, int i)
 	new_pollfd.events = POLLIN | POLLOUT;
 	pollfds->push_back(new_pollfd);
 	_clients.push_back(Client(client_fd, &_conf, _servers[i].getIP()));
-	std::cout << "[" << client_fd << "] New connection (CONN_COUNT="<<  _clients.size() << ")" << std::endl;
+	std::cerr << "[" << client_fd << "] New connection (CONN_COUNT="<<  _clients.size() << ")" << std::endl;
 }
 
 std::string Server::parseReferer(std::string referer)
@@ -180,11 +180,11 @@ void Server::loop()
 		{
 			if (errno == EINTR)
 				break ;
-			std::cout << "Poll failed." << std::endl;
+			std::cerr << "Poll failed." << std::endl;
 			break ;
 		}
 
-		if (_clients.size() < 1000)
+		if (_clients.size() < MAX_CLIENTS)
 		{
 			for (unsigned int i = 0; i < _servers.size(); i++)
 			{
@@ -207,7 +207,7 @@ void Server::loop()
 				_clients[j].respond();
 			if (_clients[j].isExpired())
 			{
-				std::cout << "[" << pollfds[i].fd << "] Closed connection.(CONN_COUNT=" <<  _clients.size() << ")" << std::endl;
+				std::cerr << "[" << pollfds[i].fd << "] Closed connection.(CONN_COUNT=" <<  _clients.size() << ")" << std::endl;
 				close(pollfds[i].fd);
 				pollfds.erase(pollfds.begin() + i);
 				_clients.erase(_clients.begin() + j);
@@ -222,10 +222,7 @@ void Server::acceptConnection(int &new_socket, int i)
 	socklen_t client_len = sizeof(client_addr);
 	new_socket = accept(_sockets_listen[i], (sockaddr *)&client_addr, &client_len);
 	if (new_socket == -1)
-	{
-		std::cout << "Server failed to accept incoming connection" << std::endl;
-		exit(1);
-	}
+		std::cerr << "Server failed to accept incoming connection" << std::endl;
 }
 
 static bool	isDir(std::string path)
@@ -422,5 +419,5 @@ void Server::sendResponse(int client_fd)
 {
 	send(client_fd, _header_response.c_str(), _header_response.size(), 0);
 	send(client_fd, _body_response.c_str(), _body_response.size(), 0);
-	std::cout << "------ Server Response sent to client ------\n\n";
+	std::cerr << "------ Server Response sent to client ------\n\n";
 }
