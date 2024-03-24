@@ -62,7 +62,8 @@ class Client
         std::string         _body_response;
         std::string         _headers;
 
-        int                 _fd;
+        std::ifstream       _out;
+        std::ofstream       _in;
         ssize_t             _bodyc;
         ssize_t             _body_len;
         char                _buff[BUFFER_SIZE];

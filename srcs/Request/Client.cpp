@@ -8,8 +8,7 @@ Client::Client(int client_fd,
                     _type(Error),
                     _start(time(0)),
                     _conf(conf),
-                    _ip(ip),
-                    _fd(-1)
+                    _ip(ip)
 {
     _body_functions[Cgi] = &Client::bodyCgi;
     _body_functions[Put] = &Client::bodyPut;
@@ -49,15 +48,14 @@ Client  &Client::operator=(Client const &client)
     _reponse_functions = client._reponse_functions;
     _body_response = client._body_response;
     _headers = client._headers;
-    _fd = client._fd;
 
     return *this;
 }
 
 Client::~Client()
 {
-    if (_fd != -1)
-        close(_fd);
+    _in.close();
+    _out.close();
 }
 
 void    Client::initServerRoute()
@@ -127,11 +125,11 @@ static bool	fileExists(std::string path)
 	return true;
 }
 
-static size_t fileSize(int fd)
+static size_t fileSize(std::string filename)
 {
 	struct stat	s;
 
-	if (fstat(fd, &s) == -1)
+	if (stat(filename.c_str(), &s) == -1)
 		return 0;
 	return s.st_size;
 }
@@ -169,10 +167,10 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
         }
         else if (fileExists(filename))
         {
-            _fd = open(filename.c_str(), O_RDONLY);
-            if (_fd == -1)
+            _out.open(filename.c_str());
+            if (!_out.is_open() || _out.fail())
                 throw std::runtime_error("403");
-            _body_len = fileSize(_fd);
+            _body_len = fileSize(filename);
         }
         else
             throw std::runtime_error("404");
@@ -253,11 +251,11 @@ void    Client::bodyPut(char const *chunk, size_t start)
 
         if (!buildUploadPath(_req, _route, upload_path))
             throw std::runtime_error("404");
-        if (_fd < 0)
+        if (!_in.is_open())
         {
             _bodyc = 0;
-            _fd = open(upload_path.c_str(), O_WRONLY | O_CREAT, 0655);
-            if (_fd < 0)
+            _in.open(upload_path.c_str());
+            if (_in.fail() || !_in.is_open())
             {
                 if (fileExists(upload_path) || isDir(upload_path))
                     throw std::runtime_error("403");
@@ -268,7 +266,8 @@ void    Client::bodyPut(char const *chunk, size_t start)
         if (start != 0)
             bytes.erase(bytes.begin(), bytes.begin() + start);
         write_size = bytes.size();
-        _bodyc += write(_fd, bytes.c_str(), write_size);
+        _in.write(bytes.c_str(), write_size);
+        _bodyc += write_size;
         if (_bodyc < 0)
             throw std::runtime_error("500");
         if (_bodyc >= _req.getContentLength())
@@ -297,20 +296,27 @@ void    Client::sendHeader()
 
 void    Client::sendFile()
 {
-    char    buff;
+    char buff[BUFFER_SIZE];
 
     if (_body_response.size() == 0)
     {
-        while (read(_fd, &buff, 1) > 0)
-            _body_response += buff;
-        close(_fd);
+        _out.seekg(_bodyc);
+        _out.read(buff, BUFFER_SIZE);
+        _bodyc += send(_client_fd,
+                        buff, 
+                        _out.gcount(),
+                        0);
     }
-    _bodyc += send(_client_fd,
-                    _body_response.c_str() + _bodyc, 
-                    _body_response.size() - _bodyc,
-                    0);
-    if (_bodyc >= (ssize_t)_body_response.size())
+    else
     {
+        _bodyc += write(_client_fd, 
+                        _body_response.c_str() + _bodyc, 
+                        _body_response.size() - _bodyc);
+    }
+    if (_bodyc >= (ssize_t)_body_len
+        || _out.fail() || _out.eof())
+    {
+        _out.close();
         _bodyc = 0;
         _state = Closed;
     }
@@ -463,7 +469,6 @@ void    Client::reset()
     _state = Header;
     _type = Error;
     _start = time(0);
-    _fd = -1;
 }
 
 bool    Client::isExpired()
