@@ -64,6 +64,7 @@ class Client
 
         std::ifstream       _out;
         std::ofstream       _in;
+        size_t              _pkt_length;
         ssize_t             _bodyc;
         ssize_t             _body_len;
         char                _buff[BUFFER_SIZE];

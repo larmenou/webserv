@@ -151,6 +151,7 @@ std::string Client::buildFilename()
 
 void    Client::bodyPostGet(char const *chunk, size_t start)
 {
+    (void) chunk;
     std::string         filename(buildFilename());
     std::stringstream   http;
     std::string         bytes;
@@ -175,7 +176,7 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
             else
                 throw std::runtime_error("404");
         }
-        _bodyc += std::string(chunk + start).size();
+        _bodyc += _pkt_length - start;
     }
     catch(const std::exception& e)
     {
@@ -253,8 +254,6 @@ void    Client::bodyPut(char const *chunk, size_t start)
 
     try {
         std::string     upload_path;
-        std::string     bytes(chunk);
-        ssize_t         write_size;
 
         if (!buildUploadPath(_req, _route, upload_path))
             throw std::runtime_error("404");
@@ -270,11 +269,8 @@ void    Client::bodyPut(char const *chunk, size_t start)
                     throw std::runtime_error("500");
             }
         }
-        if (start != 0)
-            bytes.erase(bytes.begin(), bytes.begin() + start);
-        write_size = bytes.size();
-        _in.write(bytes.c_str(), write_size);
-        _bodyc += write_size;
+        _in.write(chunk + start, _pkt_length - start);
+        _bodyc += _pkt_length;
         if (_bodyc < 0)
             throw std::runtime_error("500");
         if (_bodyc >= _req.getContentLength())
@@ -438,19 +434,17 @@ void    Client::respond()
 
 void    Client::receive()
 {
-    ssize_t     ret;
     size_t      body_start = 0;
     char        chunk[BUFFER_SIZE];
 
-    ret = read(_client_fd, chunk, BUFFER_SIZE - 1);
-    if (ret <= 0)
+    _pkt_length = read(_client_fd, chunk, BUFFER_SIZE - 1);
+    if (_pkt_length <= 0)
         return ;
-    chunk[ret] = 0;
     if (_state == Header)
     {
         try
         {
-            body_start = _req.receive_header(chunk);
+            body_start = _req.receive_header(chunk, _pkt_length);
         } catch (std::exception &e)
         {
             _status = std::strtol(e.what(), NULL, 10);
