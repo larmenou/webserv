@@ -191,8 +191,8 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
 void    Client::bodyError(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
-    _body_response  = HTTPError::buildErrorPage(_server, _status);
-    _state          = RespondingHeader;
+
+    _state = RespondingHeader;
 }
 
 void    Client::bodyCgi(char const *chunk, size_t start)
@@ -297,6 +297,20 @@ void    Client::sendHeader()
     }
 }
 
+void    Client::sendBodyResponse()
+{
+    _bodyc += send(_client_fd,
+                _body_response.c_str() + _bodyc, 
+                _body_response.size() - _bodyc,
+                0);
+    if (_bodyc >= (ssize_t)_body_response.size())
+    {
+        _bodyc = 0;
+        _state = Closed;
+        reset();
+    }
+}
+
 void    Client::sendFile()
 {
     char buff[BUFFER_SIZE];
@@ -347,9 +361,15 @@ void    Client::responsePut()
 {
     std::stringstream http;
 
-    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-    buildHeaderConnection(http);
-    sendResponse();
+    if (_headers.size() == 0)
+    {
+        http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+        buildHeaderConnection(http);
+    }
+    if (_state == RespondingHeader)
+        sendHeader();
+    if (_state == RespondingBody)
+        sendBodyResponse();
 }
 
 void    Client::responseCgi()
@@ -406,10 +426,16 @@ void    Client::responseError()
 {
     std::stringstream http;
 
-    _body_response = HTTPError::buildErrorPage(_server, _status);
-    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-    buildHeaderConnection(http);
-    sendResponse();
+    if (_headers.size() == 0)
+    {
+        _body_response  = HTTPError::buildErrorPage(_server, _status);
+        http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+        buildHeaderConnection(http);
+    }
+    if (_state == RespondingHeader)
+        sendHeader();
+    if (_state == RespondingBody)
+        sendBodyResponse();
 }
 
 void    Client::processBody(char const *chunk, size_t start)

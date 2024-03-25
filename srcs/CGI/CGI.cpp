@@ -245,8 +245,11 @@ void    CGI::start()
 void    CGI::closeCGI()
 {
     freeExecEnv();
-    close(_fds[0]);
-    close(_fds[1]);
+    if (_is_started)
+    {
+        close(_fds[0]);
+        close(_fds[1]);
+    }
     if (_pid != -1)
         kill(_pid, SIGSTOP);
     _env.clear();

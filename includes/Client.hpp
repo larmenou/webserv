@@ -90,6 +90,7 @@ class Client
 
         void    sendFile();
         void    sendHeader();
+        void    sendBodyResponse();
 
         void    reset();
 

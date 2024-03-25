@@ -86,6 +86,7 @@ static void buildHead(std::stringstream &ss)
 
 std::string HTTPError::buildErrorPage(ServerConf const &conf, int code)
 {
+    (void) conf;
     try
     {
         std::ifstream fs(conf.getErrorPage(code).c_str());
