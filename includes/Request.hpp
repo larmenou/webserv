@@ -39,7 +39,7 @@ class Request
         Request();
         ~Request();
 
-        ssize_t              getContentLength() const;
+        ssize_t             getContentLength() const;
         bool                isKeepAlive() const;
         long                getMethod() const;
         const std::string   getURN() const;
@@ -54,7 +54,7 @@ class Request
         const std::string   &respBody();
 
         bool                checkExtension(std::string extension) const;
-        size_t              receive_header(const char *chunk);
+        size_t              receive_header(const char *chunk, size_t pkt_len);
         void                reset();
 };
 
