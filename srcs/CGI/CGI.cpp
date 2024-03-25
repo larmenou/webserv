@@ -287,11 +287,10 @@ void    CGI::parseHeader(std::stringstream &ss)
             break;
         sep_i = line.find(":");
         if (sep_i == std::string::npos)
-            throw std::runtime_error("400");
+            continue;
         key = line.substr(0, sep_i);
         value = line.substr(sep_i + 1, std::string::npos);
-        trimstr(key); trimstr(value);
-        strtolower(key);
+        trimstr(key);
         _headers[key] = value;
     }
 }
@@ -318,7 +317,7 @@ std::string CGI::respond()
     parseHeader(ss);
     if (ss.tellg() != -1)
         _body = ss.str().substr(ss.tellg());
-    std::map<std::string, std::string>::const_iterator ite = _headers.find("status");
+    std::map<std::string, std::string>::const_iterator ite = _headers.find("Status");
     if (ite != _headers.end())
     {
         _status = std::strtol(ite->second.c_str(), NULL, 10);
