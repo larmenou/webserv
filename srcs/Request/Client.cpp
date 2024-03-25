@@ -207,7 +207,7 @@ void    Client::bodyCgi(char const *chunk, size_t start)
             _cgi.prepare(_req, _route, _server, "127.0.0.1");
             _cgi.start();
         }
-        if (_cgi.receive(chunk, start))
+        if (_cgi.receive(chunk, start, _pkt_length))
             _state = RespondingHeader;
     } catch (std::exception &e) {
         _status = std::strtol(e.what(), NULL, 10);
@@ -304,11 +304,7 @@ void    Client::sendBodyResponse()
                 _body_response.size() - _bodyc,
                 0);
     if (_bodyc >= (ssize_t)_body_response.size())
-    {
-        _bodyc = 0;
-        _state = Closed;
-        reset();
-    }
+        resetOrClose();
 }
 
 void    Client::sendFile()
@@ -332,11 +328,7 @@ void    Client::sendFile()
     }
     if (_bodyc >= (ssize_t)_body_len
         || _out.fail() || _out.eof())
-    {
-        _out.close();
-        _bodyc = 0;
-        _state = Closed;
-    }
+        resetOrClose();
 }
 
 void    Client::responsePostGet()
@@ -380,8 +372,8 @@ void    Client::responseCgi()
     {
         if (_headers.size() == 0)
         {
-            _headers = _cgi.buildRawHeader();
             _body_response = _cgi.respond();
+            _headers = _cgi.buildRawHeader();
             _status = _cgi.getStatus();
             _body_len = _body_response.size();
             http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Length: " << _body_len << "\r\n";
@@ -397,11 +389,7 @@ void    Client::responseCgi()
                     _body_response.size() - _bodyc,
                     0);
         if (_bodyc >= (ssize_t)_body_response.size())
-        {
-            _bodyc = 0;
-            _state = Closed;
-            reset();
-        }
+            resetOrClose();
     }
 }
 
@@ -410,11 +398,7 @@ void    Client::responseRewrite()
     if (_state == RespondingHeader)
         sendHeader();
     if (_state == RespondingBody)
-    {
-        _bodyc = 0;
-        _state = Closed;
-        reset();
-    }
+        resetOrClose();
 }
 
 void    Client::responseDelete()
@@ -487,16 +471,23 @@ void    Client::receive()
         processBody(chunk, body_start);
 }
 
-void    Client::reset()
+void    Client::resetOrClose()
 {
-    _body_response.clear();
-    _headers.clear();
-    _req.reset();
-    _cgi.closeCGI();
-    _bodyc = 0;
-    _state = Header;
-    _type = Error;
-    _start = time(0);
+    if (_req.isKeepAlive())
+    {
+        _body_response.clear();
+        _headers.clear();
+        _req.reset();
+        _cgi.closeCGI();
+        _out.close();
+        _in.close();
+        _bodyc = 0;
+        _state = Header;
+        _type = Error;
+        _start = time(0);
+    }
+    else
+        _state = Closed;
 }
 
 bool    Client::isExpired()

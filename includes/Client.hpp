@@ -91,7 +91,7 @@ class Client
         void    sendHeader();
         void    sendBodyResponse();
 
-        void    reset();
+        void    resetOrClose();
 
         std::string buildFilename();
 

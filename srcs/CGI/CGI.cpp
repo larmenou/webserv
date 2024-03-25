@@ -215,7 +215,7 @@ static void waitTimeout(pid_t pid)
     }
     if (ret < 0)
         throw std::runtime_error("500");
-    if (WIFEXITED(s) && WEXITSTATUS(s) != 0)
+    if (WIFEXITED(s) && WEXITSTATUS(s) == 127)
         throw std::runtime_error("503");
 }
 
@@ -260,13 +260,11 @@ void    CGI::closeCGI()
     _is_started = false;
 }
 
-bool    CGI::receive(const char *chunk, size_t start)
+bool    CGI::receive(const char *chunk, size_t start, size_t _pkt_len)
 {
-    ssize_t  len = std::strlen(chunk);
-
     if (_request->getMethod() & POST)
     {
-        _bdc += write(_fds[1], chunk + start, len);
+        _bdc += write(_fds[1], chunk + start, _pkt_len - start);
         if (_bdc < 0)
             throw std::runtime_error("500");
         if (_bdc >= _request->getContentLength())
@@ -320,7 +318,7 @@ std::string CGI::respond()
     parseHeader(ss);
     if (ss.tellg() != -1)
         _body = ss.str().substr(ss.tellg());
-    std::map<std::string, std::string>::const_iterator ite = _headers.find("Status");
+    std::map<std::string, std::string>::const_iterator ite = _headers.find("status");
     if (ite != _headers.end())
     {
         _status = std::strtol(ite->second.c_str(), NULL, 10);
@@ -335,12 +333,7 @@ bool    CGI::isStarted() const {
 
 int     CGI::getStatus() const
 {
-    std::map<std::string, std::string>::const_iterator
-    ite = _headers.find("Status");
-
-    if (ite == _headers.end())
-        return 200;
-    return std::strtol(ite->second.c_str(), NULL, 10);
+    return _status;
 }
 
 const std::string   &CGI::getRawResp() const

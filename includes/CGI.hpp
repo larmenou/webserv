@@ -58,7 +58,7 @@ class CGI
                         ServerConf const &server,
                         std::string remoteaddr);
         void        start();
-        bool        receive(const char *chunk, size_t start);
+        bool        receive(const char *chunk, size_t start, size_t _pkt_len);
         std::string respond();
         void        closeCGI();
 
