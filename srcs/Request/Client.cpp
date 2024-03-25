@@ -419,7 +419,7 @@ void    Client::responseRewrite()
 
 void    Client::responseDelete()
 {
-    sendResponse();
+
 }
 
 void    Client::responseError()
@@ -485,14 +485,6 @@ void    Client::receive()
     }
     if (_state == Body)
         processBody(chunk, body_start);
-}
-
-void    Client::sendResponse()
-{
-    send(_client_fd, _headers.c_str(), _headers.size(), 0);
-    send(_client_fd, _body_response.c_str(), _body_response.size(), 0);
-    _state = Closed;
-    std::cout << "------ ["<< time(0) <<"] Server Response sent to client ------\n\n";
 }
 
 void    Client::reset()
