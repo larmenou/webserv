@@ -13,7 +13,7 @@ Config::Config(std::string config_path)
     serverUpdateFuncs["autoindex"] = &Config::server_autoindex;
 
     routeUpdateFuncs["root"] = &Config::root;
-    routeUpdateFuncs["rewrite"] = &Config::rewrite;
+    routeUpdateFuncs["return"] = &Config::rewrite;
     routeUpdateFuncs["allowed_methods"] = &Config::allowed_methods;
     routeUpdateFuncs["autoindex"] = &Config::autoindex;
     routeUpdateFuncs["index"] = &Config::dir_default;
@@ -344,12 +344,12 @@ bool    Config::root(std::vector<std::string> &dirs, Route &conf)
 }
 bool    Config::rewrite(std::vector<std::string> &dirs, Route &conf)
 {
-    if (dirs.size() != 4)
+    if (dirs.size() != 3)
         return false;
-    if (dirs[3] == "permanent")
-        conf.setRedirection(dirs[1], dirs[2], 301);
-    else if (dirs[3] == "redirect")
-        conf.setRedirection(dirs[1], dirs[2], 302);
+    if (dirs[2] == "permanent")
+        conf.setRedirection(dirs[1], 301);
+    else if (dirs[2] == "redirect")
+        conf.setRedirection(dirs[1], 302);
     else
         return false;
     return true;

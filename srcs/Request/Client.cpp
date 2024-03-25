@@ -89,7 +89,7 @@ void    Client::determineRequestType()
         _type = Cgi;
     else if (_req.getMethod() == PUT && _route.isAcceptingUploads())
         _type = Put;
-    else if (_route.getRewrite().second.size() > 0)
+    else if (_route.getRewrite().size() > 0)
         _type = Rewrite;
     else if (_req.getMethod() == POST)
         _type = Post;
@@ -219,6 +219,12 @@ void    Client::bodyCgi(char const *chunk, size_t start)
 void    Client::bodyRewrite(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
+	std::stringstream http;
+
+	http << "HTTP/1.1" << " " << _route.getRedirCode() << " " << HTTPError::getErrorString(_route.getRedirCode()) 
+    << "\r\nLocation: " << _route.getRewrite() 
+    << "\r\nContent-Length: 0\r\n";
+	_headers = http.str();
 
     _state = RespondingHeader;
 }
@@ -385,12 +391,14 @@ void    Client::responseCgi()
 
 void    Client::responseRewrite()
 {
-    std::stringstream http;
-    
-    _status = _route.getRedirCode();
-    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nLocation: " << _route.getRewrite().second << "\r\nContent-Length: 0\r\n";
-    _headers = http.str();
-    sendResponse();
+    if (_state == RespondingHeader)
+        sendHeader();
+    if (_state == RespondingBody)
+    {
+        _bodyc = 0;
+        _state = Closed;
+        reset();
+    }
 }
 
 void    Client::responseDelete()
