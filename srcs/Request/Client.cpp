@@ -141,7 +141,8 @@ std::string Client::buildFilename()
 		root = _server.getRoot();
 	else
 		root = _route.getRoot();
-	filename = root;
+
+	filename = root + "/";
 	filename += _req.getURN().substr(_route.getRoute().length());
 	if (isDir(filename))
 		filename += "/" + _route.getDirFile();
@@ -150,7 +151,6 @@ std::string Client::buildFilename()
 
 void    Client::bodyPostGet(char const *chunk, size_t start)
 {
-    (void) chunk; (void) start;
     std::string         filename(buildFilename());
     std::stringstream   http;
     std::string         bytes;
@@ -158,21 +158,24 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
     _status = 200;
     try
     {
-        if (isDir(filename) && _route.isListingDirs())
+        if (!_out.is_open())
         {
-            _body_response = DirLister().generate_body(filename, _req);
-            _body_len = _body_response.length();
+            if (isDir(filename) && _route.isListingDirs())
+            {
+                _body_response = DirLister().generate_body(filename, _req);
+                _body_len = _body_response.length();
+            }
+            else if (fileExists(filename))
+            {
+                _out.open(filename.c_str());
+                if (!_out.is_open() || _out.fail())
+                    throw std::runtime_error("403");
+                _body_len = fileSize(filename);
+            }
+            else
+                throw std::runtime_error("404");
         }
-        else if (fileExists(filename))
-        {
-            _out.open(filename.c_str());
-            if (!_out.is_open() || _out.fail())
-                throw std::runtime_error("403");
-            _body_len = fileSize(filename);
-        }
-        else
-            throw std::runtime_error("404");
-        
+        _bodyc += std::string(chunk + start).size();
     }
     catch(const std::exception& e)
     {
@@ -407,11 +410,21 @@ void    Client::responseError()
 
 void    Client::processBody(char const *chunk, size_t start)
 {
-   ((this)->*(_body_functions[_type]))(chunk, start);
+    if ((size_t)_bodyc >= _server.getBodySizeLimit())
+    {
+        _type = Error;
+        _status = 413;
+    }
+    ((this)->*(_body_functions[_type]))(chunk, start);
 }
 
 void    Client::respond()
 {
+    if ((size_t)_bodyc >= _server.getBodySizeLimit())
+    {
+        _type = Error;
+        _status = 413;
+    }
     ((this)->*(_reponse_functions[_type]))();
 }
 

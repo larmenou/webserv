@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/21 17:01:05 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/25 13:58:02 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,6 +102,9 @@ void Server::initPollfds(std::vector<pollfd> *pollfds)
 void Server::addPollfd(std::vector<pollfd> *pollfds, int client_fd, int i)
 {
 	pollfd new_pollfd;
+	new_pollfd.events = 0;
+	new_pollfd.fd = 0;
+	new_pollfd.revents = 0;
 	(void) pollfds;
 
 	new_pollfd.fd = client_fd;
@@ -175,7 +178,7 @@ void Server::loop()
 	initPollfds(&pollfds);
 	while (true)
 	{
-		ready = poll(pollfds.data(), pollfds.size(), 0);
+		ready = poll(pollfds.data(), pollfds.size(), 100);
 		if (ready == -1)
 		{
 			if (errno == EINTR)
