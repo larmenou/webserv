@@ -57,7 +57,7 @@ const std::string   &Route::getDirFile() const { return _isDirFile; }
 const std::string   &Route::getCgiExtension() const { return _cgiFileExtension; }
 const std::string   &Route::getCgiPath() const { return _cgiPath; }
 const std::string   &Route::getSavePath() const { return _fileSavePath; }
-const std::pair<std::string, std::string> &Route::getRewrite() const { return _rewrite; }
+const std::string   &Route::getRewrite() const { return _rewrite; }
 long    Route::getRedirCode() const { return _redir_code; }
 long    Route::getMethodPerms() const { return _methodPerms; }
 bool    Route::isAcceptingUploads() const { return _acceptUploads; }
@@ -78,10 +78,9 @@ void    Route::setDirFile(std::string dirFile) {_isDirFile = dirFile; }
 void    Route::setCgiExtension(std::string getCgiExtension) { _cgiFileExtension = getCgiExtension; }
 void    Route::setCgiPath(std::string cgiPath) { _cgiPath = cgiPath; }
 void    Route::setSavePath(std::string savePath) { _fileSavePath = savePath; }
-void    Route::setRedirection(std::string from, std::string to, long code)
+void    Route::setRedirection(std::string to, long code)
 {
-    _rewrite.first = from;
-    _rewrite.second = to;
+    _rewrite = to;
     _redir_code = code;
 }
 void    Route::setMethodPerms(long perms) { _methodPerms = perms; }
@@ -95,8 +94,7 @@ std::ostream    &operator<<(std::ostream &os, const Route &route)
         os << "\n\t- root at '" << route.getRoot() << "'";
     if (route.getRedirCode() != -1)
         os << "\n\t- "<< (route.getRedirCode() == 301 ? "permanent " : "") 
-        << "redirection from '" << route.getRewrite().first << 
-        "' to '" << route.getRewrite().second << "'";
+        << "redirection to '" << route.getRewrite() << "'";
     os << "\n\t- autoindex " << (route.isListingDirs() ? "on" : "off");
     if (route.isAcceptingUploads())
         os << "\n\t- accepting upload at " << route.getSavePath();
