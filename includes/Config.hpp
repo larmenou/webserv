@@ -13,7 +13,7 @@
 # include "Route.hpp"
 
 #ifndef BUFFER_SIZE
-# define BUFFER_SIZE    10
+# define BUFFER_SIZE    30720
 #endif
 #ifndef SPACES
 # define SPACES         " \n\t\f\r\v"
@@ -67,8 +67,8 @@ class   Config
         ~Config();
 
         void    initConfig(std::string &config_path);
-        const ServerConf    &getServerFromHostAndIP(std::string host, std::string ip);
-        const std::vector<ServerConf>   &getServers();
+        const ServerConf    &getServerFromHostAndIP(std::string host, std::string ip) const;
+        std::vector<ServerConf>   &getServers();
         static long         str2perm(std::string &method_str);
         static std::string  perm2str(long perm);
 };

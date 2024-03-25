@@ -29,14 +29,24 @@
 #include "Request.hpp"
 #include "DirLister.hpp"
 #include "HTTPError.hpp"
+#include "Client.hpp"
 
-#define BUFF_SIZE 30720
+#ifndef BUFF_SIZE
+# define BUFF_SIZE 30720
+#endif
+
+#ifndef MAX_CLIENTS
+# define MAX_CLIENTS 200
+#endif
 
 class Server
 {
 	private:
+		Config						&_conf;
 		std::vector<ServerConf>		_servers;
 		std::vector<int>			_sockets_listen;
+		std::vector<pollfd>			_clients_fds;
+		std::vector<Client>			_clients;
 		std::vector<sockaddr_in>	_socketAddresses;
 		std::string 				_header_response;
 		std::string 				_body_response;
@@ -62,7 +72,7 @@ class Server
 		void 			basicUpload(const Request &req, const Route &route);
 
 	public:
-		Server(std::vector<ServerConf> servers);
+		Server(Config &servers);
 		~Server();
 
 		void loop();

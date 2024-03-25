@@ -25,6 +25,7 @@ class Route
         bool            _dirListing;
         std::string     _isDirFile;
         std::string     _cgiFileExtension;
+        std::string     _cgiPath;
 
         bool            _acceptUploads;
         std::string     _fileSavePath;
@@ -40,6 +41,7 @@ class Route
         const std::string   &getRoot() const;
         const std::string   &getDirFile() const;
         const std::string   &getCgiExtension() const;
+        const std::string   &getCgiPath() const;
         const std::string   &getSavePath() const;
         const std::pair<std::string, std::string> &getRewrite() const;
         long    getRedirCode() const;
@@ -51,6 +53,7 @@ class Route
         void    setRoot(std::string root);
         void    setDirFile(std::string dirFile);
         void    setCgiExtension(std::string getCgiExtension);
+        void    setCgiPath(std::string cgiPath);
         void    setSavePath(std::string savePath);
         void    setRedirection(std::string from, std::string to, long code);
         void    setMethodPerms(long perms);

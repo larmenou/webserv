@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <algorithm>
 #include <sys/wait.h>
+#include <cstring>
 #include "Request.hpp"
 #include "Route.hpp"
 
@@ -24,6 +25,11 @@ class CGI
         std::string         _raw_response;
         char                **_env_execve;
 
+        pid_t               _pid;
+        int                 _fds[2];
+        bool                _is_started;
+        ssize_t              _bdc;
+
         CGI(CGI const &a);
         CGI  &operator=(CGI const &a);
 
@@ -34,10 +40,14 @@ class CGI
         void    getRequestMethod();
         void    getServerName(const ServerConf &server);
         void    getHeaders();
-        void    parentProc(int fds[2], pid_t pid);
-        void    childProc(int fds[2]);
+        void    parentProc();
+        void    childProc();
+
+        void    parseHeader(std::stringstream &ss);
         void    parseRaw();
         char    **buildEnvFromAttr();
+
+        void    freeExecEnv();
 
     public :
         ~CGI();
@@ -47,13 +57,20 @@ class CGI
                         Route const &route,
                         ServerConf const &server,
                         std::string remoteaddr);
-        void        forwardReq();
+        void        start();
+        bool        receive(const char *chunk, size_t start);
+        std::string respond();
+        void        closeCGI();
+
         void        setCGI(std::string cgiPath);
+
+        bool                isStarted() const;
         const std::string   &getRawResp() const;
         const std::string   &getBody() const;
         const std::map<std::string, std::string> &getHeaders() const;
         int   getStatus() const;
         std::string         buildRawHeader() const;
+
 };
 
 #endif

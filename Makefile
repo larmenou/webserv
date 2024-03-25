@@ -1,16 +1,15 @@
 CXX			:=	c++
-CXXFLAGS	:=	-g -Wall -Wextra -Werror -std=c++98
-INCS		:= -I./includes
+CXXFLAGS	:=	-g -Wall -Wextra -Werror -std=c++98 -MMD
+INCS		:=	-I./includes
 OBJFLAGS 	:=	-c
 SRCS_DIR	:= ./srcs
+OBJ_DIR		:= ./obj
 
 NAME		:=	webserv
-PARSER_TEST	:= parser-test
-REQUEST_TEST := req
-CGI_TEST	:= cgi
-LS_TEST		:= ls
 
-SRCS_F		:= 	main
+SRCS_F		:= 	$(addprefix $(SRCS_DIR)/, \
+					main \
+					)
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Config/, \
 					Config \
@@ -29,6 +28,7 @@ SRCS_F		+= $(addprefix $(SRCS_DIR)/Error/, \
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Request/, \
 					Request \
+					Client \
 					)
 
 SRCS_F		+= $(addprefix $(SRCS_DIR)/Server/, \
@@ -38,36 +38,27 @@ SRCS_F		+= $(addprefix $(SRCS_DIR)/Server/, \
 					)
 
 SRCS		:=	$(addsuffix .cpp, $(SRCS_F))
-OBJ			:=	$(addsuffix .o, $(SRCS_F))
 
-DEP			:= Makefile
+OBJ			:=	$(SRCS:$(SRCS_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+
+DEPS		:= $(OBJ:%.o=%.d)
 
 all: 		$(NAME)
 
-%.o:		%.cpp $(DEP)
+-include $(DEPS)
+$(OBJ): $(OBJ_DIR)/%.o : $(SRCS_DIR)/%.cpp
+				@mkdir -p $(dir $@)
 				$(CXX) $(CXXFLAGS) $(INCS) $(OBJFLAGS) $< -o $@
 
 $(NAME):	$(OBJ)
 				$(CXX) $(CXXFLAGS) $(INCS) $(OBJ) -o $(NAME)
 
-$(PARSER_TEST): $(OBJ) srcs/Config/test.cpp
-				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Config/test.cpp -o $@
-
-$(REQUEST_TEST): $(OBJ) srcs/Request/test.cpp
-				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Request/test.cpp -o $@
-
-$(LS_TEST): $(OBJ) srcs/Server/test.cpp
-				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/Server/test.cpp -o $@
-
-$(CGI_TEST): $(OBJ) srcs/CGI/test.cpp
-				$(CXX) $(CXXFLAGS) $(INCS) $(filter-out main.o,$(OBJ)) srcs/CGI/test.cpp -o $@
-
 
 clean:
-				@rm -f $(OBJ)
+				@rm -rf $(OBJ_DIR)
 
 fclean:		clean
-				@rm -f $(NAME) $(PARSER_TEST) $(CGI_TEST) $(REQUEST_TEST) $(LS_TEST)
+				@rm -f $(NAME)
 
 re:			fclean all
 

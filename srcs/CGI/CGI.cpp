@@ -26,18 +26,10 @@ void    CGI::getQueryString()
 
 void    CGI::getContentLength()
 {
-    std::map<std::string, std::string>::const_iterator ite = _request->getHeaders().find("Content-length");
+    std::stringstream ss;
 
-    _env["CONTENT_LENGTH"] = "";
-    if (ite == _request->getHeaders().end())
-    {
-        std::stringstream ss;
-
-        ss << _request->getBody().length();
-        _env["CONTENT_LENGTH"]  = ss.str();
-        return ;
-    }
-    _env["CONTENT_LENGTH"] = ite->second;
+    ss << _request->getContentLength();
+    _env["CONTENT_LENGTH"] = ss.str();
 }
 
 void    CGI::getRequestMethod()
@@ -91,11 +83,14 @@ void    CGI::setCGI(std::string cgiPath)
 }
 
 
-CGI::CGI() : _env_execve(NULL)
+CGI::CGI() : _env_execve(NULL),
+                _pid(-1),
+                _is_started(false),
+                _bdc(0)
 {
 }
 
-CGI::~CGI()
+void    CGI::freeExecEnv()
 {
     if (_env_execve != NULL)
     {
@@ -103,6 +98,19 @@ CGI::~CGI()
             delete _env_execve[i];
         delete[] _env_execve;
     }
+    _env_execve = NULL;
+}
+
+CGI::~CGI()
+{
+    freeExecEnv();
+    if (_is_started)
+    {
+        close(_fds[0]);
+        close(_fds[1]);
+    }
+    if (_pid != -1)
+        kill(_pid, SIGSTOP);
 }
 
 void    CGI::prepare(Request const &req,
@@ -176,14 +184,14 @@ char    **CGI::buildEnvFromAttr()
     return ret;
 }
 
-void    CGI::childProc(int fds[2])
+void    CGI::childProc()
 {
     char        *av[] = {NULL, NULL};
 
-    dup2(fds[1], STDOUT_FILENO);
-    dup2(fds[0], STDIN_FILENO);
-    close(fds[0]);
-    close(fds[1]);
+    dup2(_fds[1], STDOUT_FILENO);
+    dup2(_fds[0], STDIN_FILENO);
+    close(_fds[0]);
+    close(_fds[1]);
     _env_execve = buildEnvFromAttr();
     execve(_cgi_path.c_str(), av, _env_execve);
     exit(127);
@@ -211,79 +219,125 @@ static void waitTimeout(pid_t pid)
         throw std::runtime_error("503");
 }
 
-void    CGI::parentProc(int fds[2], pid_t pid)
+void    CGI::parentProc()
 {
-    char    c;
-    ssize_t rd;
-
     _raw_response.clear();
-    if (_env["REQUEST_METHOD"] == "POST")
-        write(fds[1], _request->getBody().c_str(), _request->getBody().length());
-    close(fds[1]);
-    waitTimeout(pid);
-    do {
-        rd = read(fds[0], &c, 1);
-        if (rd < 0)
-            throw std::runtime_error("500");
-        _raw_response += c;
-    } while (rd > 0);
-    close(fds[0]);
-    parseRaw();
 }
 
-void    CGI::forwardReq()
+void    CGI::start()
 {
-    int         fds[2];
-    pid_t       pid;
-
-    _headers.clear();
     if (_env.size() == 0)
         throw std::runtime_error("500");
-    if (pipe(fds) < 0)
+    if (pipe(_fds) < 0)
         throw std::runtime_error("500");
-    pid = fork();
-    if (pid == -1)
+    _pid = fork();
+    if (_pid == -1)
         throw std::runtime_error("500");
-    if (pid == 0)
-        childProc(fds);
+    if (_pid == 0)
+        childProc();
     else
-        parentProc(fds, pid);
+        parentProc();
+    _headers.clear();
     _env.clear();
+    _is_started = true;
 }
 
-void    CGI::parseRaw()
+void    CGI::closeCGI()
 {
-    std::vector<std::string> out;
-    std::stringstream   ss(_raw_response);
-    std::string         line;
-
-    _body.clear();
+    freeExecEnv();
+    close(_fds[0]);
+    close(_fds[1]);
+    if (_pid != -1)
+        kill(_pid, SIGSTOP);
+    _env.clear();
     _headers.clear();
+    _body.clear();
+    _cgi_path.clear();
+    _raw_response.clear();
+    _is_started = false;
+}
+
+bool    CGI::receive(const char *chunk, size_t start)
+{
+    ssize_t  len = std::strlen(chunk);
+
+    if (_request->getMethod() & POST)
+    {
+        _bdc += write(_fds[1], chunk + start, len);
+        if (_bdc < 0)
+            throw std::runtime_error("500");
+        if (_bdc >= _request->getContentLength())
+            return close(_fds[1]), true;
+    } else
+        return close(_fds[1]), true;
+    return false;
+}
+
+void    CGI::parseHeader(std::stringstream &ss)
+{
+    std::string line;
+    std::string value;
+    std::string key;
+    size_t  sep_i;
+
     while (getlineCRLF(ss, line))
     {
         if (line.length() == 0)
             break;
-        split(line, out, ':');
-        if (out.size() != 2)
-            continue;
-        trimstr(out[0]); trimstr(out[1]);
-        _headers[out[0]] = out[1];
-        out.clear();
+        sep_i = line.find(":");
+        if (sep_i == std::string::npos)
+            throw std::runtime_error("400");
+        key = line.substr(0, sep_i);
+        value = line.substr(sep_i + 1, std::string::npos);
+        trimstr(key); trimstr(value);
+        strtolower(key);
+        _headers[key] = value;
     }
+}
+
+std::string CGI::respond()
+{
+    std::vector<std::string> out;
+    std::stringstream   ss;
+    std::string         line;
+    ssize_t  rd;
+    char    c;
+
+    waitTimeout(_pid);
+    do {
+        rd = read(_fds[0], &c, 1);
+        if (rd < 0)
+            throw std::runtime_error("500");
+        _raw_response += c;
+    } while (rd > 0);
+    close(_fds[0]);
+    ss << _raw_response;
+    _body.clear();
+    _headers.clear();
+    parseHeader(ss);
+    if (ss.tellg() != -1)
+        _body = ss.str().substr(ss.tellg());
     std::map<std::string, std::string>::const_iterator ite = _headers.find("Status");
     if (ite != _headers.end())
     {
         _status = std::strtol(ite->second.c_str(), NULL, 10);
         _headers.erase(ite->first);
     }
-    if (ss.tellg() != -1)
-        _body = ss.str().substr(ss.tellg());
-    
+    return _body;
 }
 
-int CGI::getStatus() const
+bool    CGI::isStarted() const {
+    return _is_started;
+}
+
+int     CGI::getStatus() const
 {
-    return _status;
+    std::map<std::string, std::string>::const_iterator
+    ite = _headers.find("Status");
+
+    if (ite == _headers.end())
+        return 200;
+    return std::strtol(ite->second.c_str(), NULL, 10);
 }
 
 const std::string   &CGI::getRawResp() const
