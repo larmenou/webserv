@@ -71,7 +71,6 @@ class Client
 
         Client();
 
-        void    sendResponse();
         void    processBody(char const *chunk,
                             size_t start);
         void    bodyPostGet(char const *chunk, size_t start);
@@ -90,6 +89,7 @@ class Client
 
         void    sendFile();
         void    sendHeader();
+        void    sendBodyResponse();
 
         void    reset();
 
