@@ -200,10 +200,11 @@ void Server::loop()
 		{
 			size_t j = i - _servers.size();
 
-			if (pollfds[i].revents & POLLIN)
+			if (pollfds[i].revents & POLLIN &&
+			(_clients[j].getState() == Header || _clients[j].getState() == Body ))
 				_clients[j].receive();
-			if ((pollfds[i].revents & POLLOUT)
-			&& (_clients[j].getState()))
+			else if ((pollfds[i].revents & POLLOUT) &&
+			(_clients[j].getState() == RespondingHeader || _clients[j].getState() == RespondingBody))
 				_clients[j].respond();
 			if (_clients[j].isExpired())
 			{

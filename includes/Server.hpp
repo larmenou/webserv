@@ -36,7 +36,7 @@
 #endif
 
 #ifndef MAX_CLIENTS
-# define MAX_CLIENTS 10
+# define MAX_CLIENTS 200
 #endif
 
 class Server

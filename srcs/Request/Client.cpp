@@ -54,8 +54,6 @@ Client  &Client::operator=(Client const &client)
 
 Client::~Client()
 {
-    _in.close();
-    _out.close();
 }
 
 void    Client::initServerRoute()
@@ -452,10 +450,7 @@ void    Client::sendResponse()
 {
     send(_client_fd, _headers.c_str(), _headers.size(), 0);
     send(_client_fd, _body_response.c_str(), _body_response.size(), 0);
-    /*if (_req.isKeepAlive())
-        reset();
-    else*/
-        _state = Closed;
+    _state = Closed;
     std::cout << "------ ["<< time(0) <<"] Server Response sent to client ------\n\n";
 }
 

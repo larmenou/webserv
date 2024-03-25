@@ -104,8 +104,11 @@ void    CGI::freeExecEnv()
 CGI::~CGI()
 {
     freeExecEnv();
-    close(_fds[0]);
-    close(_fds[1]);
+    if (_is_started)
+    {
+        close(_fds[0]);
+        close(_fds[1]);
+    }
     if (_pid != -1)
         kill(_pid, SIGSTOP);
 }
@@ -236,6 +239,7 @@ void    CGI::start()
         parentProc();
     _headers.clear();
     _env.clear();
+    _is_started = true;
 }
 
 void    CGI::closeCGI()
