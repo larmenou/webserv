@@ -6,7 +6,7 @@
 /*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/21 17:01:05 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/25 14:04:33 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -269,7 +269,7 @@ void Server::buildRedirResp(Route route, int client_fd)
 	std::stringstream http;
 	
 	status = route.getRedirCode();
-	http << "HTTP/1.1" << " " << status << " " << HTTPError::getErrorString(status) << "\r\nLocation: " << route.getRewrite().second << "\r\nContent-Length: 0\r\n";
+	http << "HTTP/1.1" << " " << status << " " << HTTPError::getErrorString(status) << "\r\nLocation: " << route.getRewrite() << "\r\nContent-Length: 0\r\n";
 	_header_response = http.str();
 	
 	send(client_fd, _header_response.c_str(), _header_response.size(), 0);
@@ -389,7 +389,7 @@ void Server::buildResponse(Request const &req, int i, int client_fd)
 			status = handleUpload(req, route, i);
 		else
 		{
-			if (route.getRewrite().second.size() > 0)
+			if (route.getRewrite().size() > 0)
 			{
 				buildRedirResp(route, client_fd);
 				return ;
