@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/25 14:27:32 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/25 14:33:05 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,18 +94,14 @@ void Server::initPollfds(std::vector<pollfd> *pollfds)
 	{
         pollfd pfd;
         pfd.fd = _sockets_listen[i];
-        pfd.events = POLLIN | POLLOUT;
+        pfd.events = POLLIN;
         pollfds->push_back(pfd);
     }
 }
 
 void Server::addPollfd(std::vector<pollfd> *pollfds, int client_fd, int i)
 {
-	pollfd new_pollfd;
-	new_pollfd.events = 0;
-	new_pollfd.fd = 0;
-	new_pollfd.revents = 0;
-	(void) pollfds;
+	pollfd new_pollfd = {0, 0, 0};
 
 	new_pollfd.fd = client_fd;
 	new_pollfd.events = POLLIN | POLLOUT;
