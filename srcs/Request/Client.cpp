@@ -79,11 +79,6 @@ void    Client::buildHeaderConnection(std::stringstream &http)
 
 void    Client::determineRequestType()
 {
-    /* std::cout << DELETE << std::endl;
-    std::cout << _req.getMethod() << std::endl;
-    std::cout << _route.getMethodPerms() << std::endl;
-    std::cout << (_req.getMethod() & _route.getMethodPerms()) << std::endl; */
-
     if ((_req.getMethod() & _route.getMethodPerms()) == 0 && _req.getMethod() != DELETE)
     {
         _type = Error;
@@ -271,6 +266,7 @@ void    Client::bodyPut(char const *chunk, size_t start)
     try {
         std::string     upload_path;
 
+        std::cout << "UPLOADING" << std::endl;
         if (!buildUploadPath(_req, _route, upload_path))
             throw std::runtime_error("404");
         if (!_in.is_open())
