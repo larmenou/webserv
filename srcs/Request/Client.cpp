@@ -211,6 +211,7 @@ void    Client::bodyCgi(char const *chunk, size_t start)
         if (_cgi.receive(chunk, start, _pkt_length))
             _state = RespondingHeader;
     } catch (std::exception &e) {
+        _cgi.closeCGI();
         _status = std::strtol(e.what(), NULL, 10);
         _type = Error;
         _state = RespondingHeader;
@@ -387,11 +388,20 @@ void    Client::responseCgi()
     {
         if (_headers.size() == 0)
         {
-            _body_response = _cgi.respond();
-            _headers = _cgi.buildRawHeader();
-            _status = _cgi.getStatus();
-            if (_status >= 400)
-                _body_response = HTTPError::buildErrorPage(_server, _status);
+            try
+            {
+                _body_response = _cgi.respond();
+                _headers = _cgi.buildRawHeader();
+                _status = _cgi.getStatus();
+                if (_status >= 400)
+                    _body_response = HTTPError::buildErrorPage(_server, _status);
+            }
+            catch(const std::exception& e)
+            {
+                _cgi.closeCGI();
+                _body_response = HTTPError::buildErrorPage(_server,
+                                    _status = std::strtol(e.what(), NULL, 10));
+            }
             _body_len = _body_response.size();
             http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Length: " << _body_len << "\r\n";
             buildHeaderConnection(http);

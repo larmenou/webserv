@@ -1,12 +1,12 @@
 <?php 
 session_start();
 $_SESSION = array();
-$users = array("admin" => sha1("password123"), "user" => sha1("motdepassesecret"));
-
+$users = array("Obama" => sha1("password123"), "user" => sha1("motdepassesecret"));
+sleep(1);
 if (isset($_GET["logout"]))
 {
+    header('Location: login.php');
     setcookie ("user", "", time() - 3600);
-    header('location:login.php');
 }
 
 if (isset($_POST['username']) && isset($_POST['password']))
