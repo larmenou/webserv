@@ -156,6 +156,7 @@ std::string Client::buildFilename()
 
 void    Client::bodyPostGet(char const *chunk, size_t start)
 {
+    (void) chunk;
     std::string         filename(buildFilename());
     std::stringstream   http;
     std::string         bytes;
@@ -180,7 +181,7 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
             else
                 throw std::runtime_error("404");
         }
-        _bodyc += std::string(chunk + start).size();
+        _bodyc += _pkt_length - start;
     }
     catch(const std::exception& e)
     {
@@ -195,8 +196,8 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
 void    Client::bodyError(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
-    _body_response  = HTTPError::buildErrorPage(_server, _status);
-    _state          = RespondingHeader;
+
+    _state = RespondingHeader;
 }
 
 void    Client::bodyCgi(char const *chunk, size_t start)
@@ -269,8 +270,6 @@ void    Client::bodyPut(char const *chunk, size_t start)
 
     try {
         std::string     upload_path;
-        std::string     bytes(chunk);
-        ssize_t         write_size;
 
         if (!buildUploadPath(_req, _route, upload_path))
             throw std::runtime_error("404");
@@ -286,11 +285,8 @@ void    Client::bodyPut(char const *chunk, size_t start)
                     throw std::runtime_error("500");
             }
         }
-        if (start != 0)
-            bytes.erase(bytes.begin(), bytes.begin() + start);
-        write_size = bytes.size();
-        _in.write(bytes.c_str(), write_size);
-        _bodyc += write_size;
+        _in.write(chunk + start, _pkt_length - start);
+        _bodyc += _pkt_length;
         if (_bodyc < 0)
             throw std::runtime_error("500");
         if (_bodyc >= _req.getContentLength())
@@ -314,6 +310,20 @@ void    Client::sendHeader()
     {
         _bodyc = 0;
         _state = RespondingBody;
+    }
+}
+
+void    Client::sendBodyResponse()
+{
+    _bodyc += send(_client_fd,
+                _body_response.c_str() + _bodyc, 
+                _body_response.size() - _bodyc,
+                0);
+    if (_bodyc >= (ssize_t)_body_response.size())
+    {
+        _bodyc = 0;
+        _state = Closed;
+        reset();
     }
 }
 
@@ -367,9 +377,15 @@ void    Client::responsePut()
 {
     std::stringstream http;
 
-    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-    buildHeaderConnection(http);
-    sendResponse();
+    if (_headers.size() == 0)
+    {
+        http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+        buildHeaderConnection(http);
+    }
+    if (_state == RespondingHeader)
+        sendHeader();
+    if (_state == RespondingBody)
+        sendBodyResponse();
 }
 
 void    Client::responseCgi()
@@ -430,10 +446,16 @@ void    Client::responseError()
 {
     std::stringstream http;
 
-    _body_response = HTTPError::buildErrorPage(_server, _status);
-    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-    buildHeaderConnection(http);
-    sendResponse();
+    if (_headers.size() == 0)
+    {
+        _body_response  = HTTPError::buildErrorPage(_server, _status);
+        http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+        buildHeaderConnection(http);
+    }
+    if (_state == RespondingHeader)
+        sendHeader();
+    if (_state == RespondingBody)
+        sendBodyResponse();
 }
 
 void    Client::processBody(char const *chunk, size_t start)
@@ -458,19 +480,17 @@ void    Client::respond()
 
 void    Client::receive()
 {
-    ssize_t     ret;
     size_t      body_start = 0;
     char        chunk[BUFFER_SIZE];
 
-    ret = read(_client_fd, chunk, BUFFER_SIZE - 1);
-    if (ret <= 0)
+    _pkt_length = read(_client_fd, chunk, BUFFER_SIZE - 1);
+    if (_pkt_length <= 0)
         return ;
-    chunk[ret] = 0;
     if (_state == Header)
     {
         try
         {
-            body_start = _req.receive_header(chunk);
+            body_start = _req.receive_header(chunk, _pkt_length);
         } catch (std::exception &e)
         {
             _status = std::strtol(e.what(), NULL, 10);
@@ -485,14 +505,6 @@ void    Client::receive()
     }
     if (_state == Body)
         processBody(chunk, body_start);
-}
-
-void    Client::sendResponse()
-{
-    send(_client_fd, _headers.c_str(), _headers.size(), 0);
-    send(_client_fd, _body_response.c_str(), _body_response.size(), 0);
-    _state = Closed;
-    std::cout << "------ ["<< time(0) <<"] Server Response sent to client ------\n\n";
 }
 
 void    Client::reset()

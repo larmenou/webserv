@@ -64,13 +64,13 @@ class Client
 
         std::ifstream       _out;
         std::ofstream       _in;
+        size_t              _pkt_length;
         ssize_t             _bodyc;
         ssize_t             _body_len;
         char                _buff[BUFFER_SIZE];
 
         Client();
 
-        void    sendResponse();
         void    processBody(char const *chunk,
                             size_t start);
         void    bodyPostGet(char const *chunk, size_t start);
@@ -89,6 +89,7 @@ class Client
 
         void    sendFile();
         void    sendHeader();
+        void    sendBodyResponse();
 
         void    reset();
 
