@@ -79,7 +79,12 @@ void    Client::buildHeaderConnection(std::stringstream &http)
 
 void    Client::determineRequestType()
 {
-    if ((_req.getMethod() & _route.getMethodPerms()) == 0)
+    /* std::cout << DELETE << std::endl;
+    std::cout << _req.getMethod() << std::endl;
+    std::cout << _route.getMethodPerms() << std::endl;
+    std::cout << (_req.getMethod() & _route.getMethodPerms()) << std::endl; */
+
+    if ((_req.getMethod() & _route.getMethodPerms()) == 0 && _req.getMethod() != DELETE)
     {
         _type = Error;
         _status = 405;
@@ -232,8 +237,19 @@ void    Client::bodyRewrite(char const *chunk, size_t start)
 void    Client::bodyDelete(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
+    int fd;
 
-    /*TODO : Implement delete method*/
+    fd = open(("."+_req.getURN()).c_str(), O_RDONLY);
+    if (fd == -1)
+    {
+        _status = 204;
+    }
+    else
+    {
+        _status = 200;
+        close(fd);
+        remove(("."+_req.getURN()).c_str());
+    }
     _state = RespondingHeader;
 }
 
@@ -403,6 +419,10 @@ void    Client::responseRewrite()
 
 void    Client::responseDelete()
 {
+    std::stringstream http;
+
+    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+    buildHeaderConnection(http);
     sendResponse();
 }
 
