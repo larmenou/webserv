@@ -190,10 +190,10 @@ void    CGI::childProc()
 
     dup2(_fds[1], STDOUT_FILENO);
     dup2(_fds[0], STDIN_FILENO);
-    close(_fds[0]);
-    close(_fds[1]);
     _env_execve = buildEnvFromAttr();
     execve(_cgi_path.c_str(), av, _env_execve);
+    close(_fds[1]);
+    close(_fds[0]);
     exit(127);
 }
 
