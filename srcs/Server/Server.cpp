@@ -6,15 +6,19 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/26 15:20:49 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/26 17:10:38 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "CGI.hpp"
 
+int g_sig;
+
 void Server::signalHandler(int)
-{}
+{
+	g_sig = 1;
+}
 
 Server::Server(Config &conf) : 	_conf(conf),
 								_servers(conf.getServers()),
@@ -25,6 +29,7 @@ Server::Server(Config &conf) : 	_conf(conf),
 								_default_root("./html")
 {
 	struct sockaddr_in socketAddress;
+	g_sig = 0;
 	
 	signal(SIGINT, &Server::signalHandler);
 	signal(SIGQUIT, &Server::signalHandler);
@@ -174,11 +179,11 @@ void Server::loop()
 	initPollfds(&pollfds);
 	while (true)
 	{
+		if (g_sig)
+			break ;
 		ready = poll(pollfds.data(), pollfds.size(), 100);
 		if (ready == -1)
 		{
-			if (errno == EINTR)
-				break ;
 			std::cerr << "Poll failed." << std::endl;
 			break ;
 		}
