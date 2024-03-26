@@ -156,6 +156,7 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
     std::stringstream   http;
     std::string         bytes;
 
+    std::cout << "FILENAME: " <<  filename << std::endl;
     _status = 200;
     try
     {
@@ -166,7 +167,7 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
                 _body_response = DirLister().generate_body(filename, _req);
                 _body_len = _body_response.length();
             }
-            else if (fileExists(filename))
+            else if (fileExists(filename) && !isDir(filename))
             {
                 _out.open(filename.c_str());
                 if (!_out.is_open() || _out.fail())
@@ -224,9 +225,8 @@ void    Client::bodyRewrite(char const *chunk, size_t start)
 
 	http << "HTTP/1.1" << " " << _route.getRedirCode() << " " << HTTPError::getErrorString(_route.getRedirCode()) 
     << "\r\nLocation: " << _route.getRewrite() 
-    << "\r\nContent-Length: 0\r\n";
+    << "\r\nContent-Length: 0\r\n\r\n";
 	_headers = http.str();
-
     _state = RespondingHeader;
 }
 
@@ -371,6 +371,7 @@ void    Client::responsePut()
     {
         http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
         buildHeaderConnection(http);
+        std::cout << _headers << std::endl;
     }
     if (_state == RespondingHeader)
         sendHeader();
@@ -421,9 +422,15 @@ void    Client::responseDelete()
 {
     std::stringstream http;
 
-    http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-    buildHeaderConnection(http);
-    sendHeader();
+    if (_headers.size() == 0)
+    {
+        http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
+        buildHeaderConnection(http);
+    }
+    if (_state == RespondingHeader)
+        sendHeader();
+    if (_state == RespondingBody)
+        resetOrClose();
 }
 
 void    Client::responseError()
@@ -444,8 +451,10 @@ void    Client::responseError()
 
 void    Client::processBody(char const *chunk, size_t start)
 {
+    _start = time(0);
     if ((size_t)_bodyc + _pkt_length >= _server.getBodySizeLimit())
     {
+        _bodyc = 0;
         _type = Error;
         _status = 413;
     }
@@ -454,6 +463,7 @@ void    Client::processBody(char const *chunk, size_t start)
 
 void    Client::respond()
 {
+    _start = time(0);
     ((this)->*(_reponse_functions[_type]))();
 }
 
@@ -477,6 +487,7 @@ void    Client::receive()
         }
         if (body_start != std::string::npos)
         {
+            std::cerr << "RECEIVED :\n" << _req << std::endl;
             initServerRoute();
             determineRequestType();
             _state = Body;

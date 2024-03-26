@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/21 15:52:29 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/26 15:03:19 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <deque>
 #include <csignal>
 #include <poll.h>
 #include <sys/socket.h>
@@ -45,8 +46,8 @@ class Server
 		Config						&_conf;
 		std::vector<ServerConf>		_servers;
 		std::vector<int>			_sockets_listen;
-		std::vector<pollfd>			_clients_fds;
-		std::vector<Client>			_clients;
+		std::deque<pollfd>			_clients_fds;
+		std::deque<Client>			_clients;
 		std::vector<sockaddr_in>	_socketAddresses;
 		std::string 				_header_response;
 		std::string 				_body_response;

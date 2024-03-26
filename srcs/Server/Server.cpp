@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/25 14:33:05 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/26 15:20:49 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -174,7 +174,7 @@ void Server::loop()
 	initPollfds(&pollfds);
 	while (true)
 	{
-		ready = poll(pollfds.data(), pollfds.size(), 0);
+		ready = poll(pollfds.data(), pollfds.size(), 100);
 		if (ready == -1)
 		{
 			if (errno == EINTR)
@@ -205,7 +205,7 @@ void Server::loop()
 			else if ((pollfds[i].revents & POLLOUT) &&
 			(_clients[j].getState() == RespondingHeader || _clients[j].getState() == RespondingBody))
 				_clients[j].respond();
-			if (_clients[j].isExpired())
+			if ( _clients[j].getState() == Waiting && _clients[j].isExpired() )
 			{
 				std::cerr << "[" << pollfds[i].fd << "] Closed connection.(CONN_COUNT=" <<  _clients.size() << ")" << std::endl;
 				close(pollfds[i].fd);

@@ -172,7 +172,6 @@ size_t  Request::receive_header(const char *chunk, size_t pkt_length)
             trimstr(clen);
             _content_length = std::strtoul(clen.c_str(), NULL, 10);
         }
-        std::cout << "Received :\n" << _raw_header << std::endl;
         return end + 4;
     }
     return end - start;
