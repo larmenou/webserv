@@ -8,7 +8,8 @@ Client::Client(int client_fd,
                     _type(Error),
                     _start(time(0)),
                     _conf(conf),
-                    _ip(ip)
+                    _ip(ip),
+                    _bodyc(0)
 {
     _body_functions[Cgi] = &Client::bodyCgi;
     _body_functions[Put] = &Client::bodyPut;
@@ -156,7 +157,6 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
     std::stringstream   http;
     std::string         bytes;
 
-    std::cout << "FILENAME: " <<  filename << std::endl;
     _status = 200;
     try
     {
@@ -376,7 +376,7 @@ void    Client::responsePut()
     if (_state == RespondingHeader)
         sendHeader();
     if (_state == RespondingBody)
-        sendBodyResponse();
+        resetOrClose();
 }
 
 void    Client::responseCgi()
@@ -475,6 +475,7 @@ void    Client::receive()
     _pkt_length = recv(_client_fd, chunk, BUFFER_SIZE - 1, MSG_NOSIGNAL);
     if (_pkt_length <= 0)
         return ;
+    
     if (_state == Header)
     {
         try
@@ -484,8 +485,9 @@ void    Client::receive()
         {
             _status = std::strtol(e.what(), NULL, 10);
             _type = Error;
+            _state = RespondingHeader;
         }
-        if (body_start != std::string::npos)
+        if (_req.isParsed())
         {
             std::cerr << "RECEIVED :\n" << _req << std::endl;
             initServerRoute();

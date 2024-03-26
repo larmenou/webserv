@@ -300,7 +300,7 @@ bool    Config::client_max_body_size(std::vector<std::string> &dirs, ServerConf 
     if (dirs.size() != 2)
         return false;
     size = std::strtoul(dirs[1].c_str(), &endptr, 10);
-    if (*endptr != 0)
+    if (*endptr != 0 || errno == ERANGE)
         return false;
     conf.setBodySizeLimit(size);
     return true;

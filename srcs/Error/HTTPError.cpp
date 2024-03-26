@@ -87,6 +87,8 @@ static void buildHead(std::stringstream &ss)
 std::string HTTPError::buildErrorPage(ServerConf const &conf, int code)
 {
     (void) conf;
+    std::map<int, std::string>::iterator ite;
+
     try
     {
         std::ifstream fs(conf.getErrorPage(code).c_str());
@@ -101,6 +103,9 @@ std::string HTTPError::buildErrorPage(ServerConf const &conf, int code)
     {
         std::stringstream ss;
 
+        ite = _status_codes.find(code);
+        if (ite == _status_codes.end())
+            code = 500;
         buildHead(ss);
         ss << "<body>";
         ss << "<center>";
@@ -116,6 +121,6 @@ std::string HTTPError::getErrorString(int code)
     std::map<int, std::string>::iterator ite;
 
     if ((ite = _status_codes.find(code)) == _status_codes.end())
-        return "Unkown error code";
+        return _status_codes[500];
     return ite->second;
 }

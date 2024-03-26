@@ -58,6 +58,7 @@ Request::~Request()
 {
 }
 
+bool                Request::isParsed() const { return _isParsed; }
 bool                Request::isKeepAlive() const { return _keep_alive; }
 ssize_t             Request::getContentLength() const { return _content_length; }
 const std::string   Request::getURN() const { return _urn; }
@@ -172,6 +173,7 @@ size_t  Request::receive_header(const char *chunk, size_t pkt_length)
             trimstr(clen);
             _content_length = std::strtoul(clen.c_str(), NULL, 10);
         }
+        _isParsed = true;
         return end + 4;
     }
     return end - start;
