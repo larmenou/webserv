@@ -289,7 +289,7 @@ void    Client::sendHeader()
     _bodyc += send(_client_fd,
                     _headers.c_str() + _bodyc, 
                     _headers.size() - _bodyc,
-                    0);
+                    MSG_NOSIGNAL);
     if (_bodyc >= (ssize_t)_headers.size())
     {
         _bodyc = 0;
@@ -302,7 +302,7 @@ void    Client::sendBodyResponse()
     _bodyc += send(_client_fd,
                 _body_response.c_str() + _bodyc, 
                 _body_response.size() - _bodyc,
-                0);
+                MSG_NOSIGNAL);
     if (_bodyc >= (ssize_t)_body_response.size())
         resetOrClose();
 }
@@ -318,13 +318,14 @@ void    Client::sendFile()
         _bodyc += send(_client_fd,
                         buff, 
                         _out.gcount(),
-                        0);
+                        MSG_NOSIGNAL);
     }
     else
     {
-        _bodyc += write(_client_fd, 
+        _bodyc += send(_client_fd, 
                         _body_response.c_str() + _bodyc, 
-                        _body_response.size() - _bodyc);
+                        _body_response.size() - _bodyc,
+                        MSG_NOSIGNAL);
     }
     if (_bodyc >= (ssize_t)_body_len
         || _out.fail() || _out.eof())
@@ -375,6 +376,8 @@ void    Client::responseCgi()
             _body_response = _cgi.respond();
             _headers = _cgi.buildRawHeader();
             _status = _cgi.getStatus();
+            if (_status >= 400)
+                _body_response = HTTPError::buildErrorPage(_server, _status);
             _body_len = _body_response.size();
             http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Length: " << _body_len << "\r\n";
             buildHeaderConnection(http);
@@ -387,7 +390,7 @@ void    Client::responseCgi()
         _bodyc += send(_client_fd,
                     _body_response.c_str() + _bodyc, 
                     _body_response.size() - _bodyc,
-                    0);
+                    MSG_NOSIGNAL);
         if (_bodyc >= (ssize_t)_body_response.size())
             resetOrClose();
     }
@@ -447,7 +450,7 @@ void    Client::receive()
     size_t      body_start = 0;
     char        chunk[BUFFER_SIZE];
 
-    _pkt_length = read(_client_fd, chunk, BUFFER_SIZE - 1);
+    _pkt_length = recv(_client_fd, chunk, BUFFER_SIZE - 1, MSG_NOSIGNAL);
     if (_pkt_length <= 0)
         return ;
     if (_state == Header)
