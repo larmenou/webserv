@@ -25,7 +25,6 @@ typedef enum e_clientstate
     Body,
     RespondingHeader,
     RespondingBody,
-    Waiting,
     Closed
 } t_clientstate;
 
@@ -107,10 +106,11 @@ class Client
         ~Client();
         Client  &operator=(Client const &client);
 
-        void    receive();
+        void    receive(const char *chunk, size_t pkt_len);
         void    respond();
         bool    isExpired();
         int     getFD();
+        void    close();
         t_clientstate getState();
 };
 
