@@ -50,6 +50,7 @@ class ServerConf
         void        setRoot(std::string root);
         void        setIndex(std::string index);
         void        setDirListing(bool state);
+        void        setMethodPerms(long methodPerms);
 
         void        addUser(std::string str);
         bool        authenticateUser(std::string str);

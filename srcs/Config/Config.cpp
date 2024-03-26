@@ -11,6 +11,7 @@ Config::Config(std::string config_path)
     serverUpdateFuncs["root"] = &Config::server_root;
     serverUpdateFuncs["index"] = &Config::server_index;
     serverUpdateFuncs["autoindex"] = &Config::server_autoindex;
+    serverUpdateFuncs["allowed_methods"] = &Config::server_allowed_methods;
 
     routeUpdateFuncs["root"] = &Config::root;
     routeUpdateFuncs["return"] = &Config::rewrite;
@@ -246,7 +247,6 @@ bool    Config::server_name(std::vector<std::string> &dirs, ServerConf &conf)
     return true;
 }
 
-
 bool    Config::listen(std::vector<std::string> &dirs, ServerConf &conf)
 {
     std::vector<std::string>    out;
@@ -379,6 +379,26 @@ bool    Config::allowed_methods(std::vector<std::string> &dirs, Route &conf)
     conf.setMethodPerms(perms);
     return true;
 }
+
+bool    Config::server_allowed_methods(std::vector<std::string> &dirs, ServerConf &conf)
+{
+    std::map<std::string, long>::iterator ite;
+    long    perms = 0;
+
+    if (dirs.size() <= 1)
+        return false;
+    for (size_t i = 1; i < dirs.size(); i++)
+    {
+        capitalize(dirs[i]);
+        ite = str2permmap.find(dirs[i]);
+        if (ite == str2permmap.end())
+            return false;
+        perms |= ite->second;
+    }
+    conf.setMethodPerms(perms);
+    return true;
+}
+
 
 bool    Config::autoindex(std::vector<std::string> &dirs, Route &conf)
 {
