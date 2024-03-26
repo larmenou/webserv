@@ -174,7 +174,7 @@ void Server::loop()
 	initPollfds(&pollfds);
 	while (true)
 	{
-		ready = poll(pollfds.data(), pollfds.size(), 100);
+		ready = poll(pollfds.data(), pollfds.size(), 0);
 		if (ready == -1)
 		{
 			if (errno == EINTR)
