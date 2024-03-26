@@ -439,7 +439,7 @@ void    Client::responseDelete()
 
     http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
     buildHeaderConnection(http);
-    sendResponse();
+    sendHeader();
 }
 
 void    Client::responseError()
