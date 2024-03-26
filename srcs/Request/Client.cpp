@@ -446,8 +446,9 @@ void    Client::responseError()
 
 void    Client::processBody(char const *chunk, size_t start)
 {
-    if ((size_t)_bodyc >= _server.getBodySizeLimit())
+    if ((size_t)_bodyc + _pkt_length >= _server.getBodySizeLimit())
     {
+        std::cout << _bodyc << std::endl;
         _type = Error;
         _status = 413;
     }
@@ -456,11 +457,6 @@ void    Client::processBody(char const *chunk, size_t start)
 
 void    Client::respond()
 {
-    if ((size_t)_bodyc >= _server.getBodySizeLimit())
-    {
-        _type = Error;
-        _status = 413;
-    }
     ((this)->*(_reponse_functions[_type]))();
 }
 
