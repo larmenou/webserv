@@ -355,26 +355,23 @@ bool    Config::rewrite(std::vector<std::string> &dirs, Route &conf)
     return true;
 }
 
-static void rejoin(std::vector<std::string> &dirs, std::string &out)
+static void capitalize(std::string &str)
 {
-    for (size_t i = 1; i < dirs.size(); i++)
-        out += dirs[i];
+    for (size_t i = 0; i < str.length(); i++)
+        str[i] = std::toupper(str[i]);
 }
 
 bool    Config::allowed_methods(std::vector<std::string> &dirs, Route &conf)
 {
-    std::string out;
-    std::vector<std::string> methods;
     std::map<std::string, long>::iterator ite;
     long    perms = 0;
 
     if (dirs.size() <= 1)
         return false;
-    rejoin(dirs, out);
-    split(out, methods, ',');
-    for (size_t i = 0; i < methods.size(); i++)
+    for (size_t i = 1; i < dirs.size(); i++)
     {
-        ite = str2permmap.find(methods[i]);
+        capitalize(dirs[i]);
+        ite = str2permmap.find(dirs[i]);
         if (ite == str2permmap.end())
             return false;
         perms |= ite->second;
@@ -382,6 +379,7 @@ bool    Config::allowed_methods(std::vector<std::string> &dirs, Route &conf)
     conf.setMethodPerms(perms);
     return true;
 }
+
 bool    Config::autoindex(std::vector<std::string> &dirs, Route &conf)
 {
     if (dirs.size() != 2)
