@@ -451,7 +451,6 @@ void    Client::responseError()
 
 void    Client::processBody(char const *chunk, size_t start)
 {
-    _start = time(0);
     if ((size_t)_bodyc + _pkt_length >= _server.getBodySizeLimit())
     {
         _bodyc = 0;
@@ -467,15 +466,12 @@ void    Client::respond()
     ((this)->*(_reponse_functions[_type]))();
 }
 
-void    Client::receive()
+void    Client::receive(const char *chunk, size_t pkt_len)
 {
     size_t      body_start = 0;
-    char        chunk[BUFFER_SIZE];
 
-    _pkt_length = recv(_client_fd, chunk, BUFFER_SIZE - 1, MSG_NOSIGNAL);
-    if (_pkt_length <= 0)
-        return ;
-    
+    _start = time(0);
+    _pkt_length = pkt_len;
     if (_state == Header)
     {
         try
@@ -489,7 +485,6 @@ void    Client::receive()
         }
         if (_req.isParsed())
         {
-            std::cerr << "RECEIVED :\n" << _req << std::endl;
             initServerRoute();
             determineRequestType();
             _state = Body;
@@ -525,6 +520,11 @@ bool    Client::isExpired()
     if (_state == Closed)
         return true;
     return false;
+}
+
+void    Client::close()
+{
+    _state = Closed;
 }
 
 t_clientstate   Client::getState()

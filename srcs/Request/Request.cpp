@@ -158,8 +158,6 @@ size_t  Request::receive_header(const char *chunk, size_t pkt_length)
     size_t              end;
 
     _raw_header += std::string(chunk, pkt_length);
-    if (_raw_header.length() > MAX_HEADER)
-        throw std::runtime_error("431");
     end = _raw_header.find("\r\n\r\n");
     if (end != std::string::npos)
     {
@@ -176,6 +174,8 @@ size_t  Request::receive_header(const char *chunk, size_t pkt_length)
         _isParsed = true;
         return end + 4;
     }
+    else if (_raw_header.length() > MAX_HEADER)
+        throw std::runtime_error("431");
     return end - start;
 }
 

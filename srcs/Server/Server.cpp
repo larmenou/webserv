@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/26 17:10:38 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/26 18:05:08 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -172,9 +172,11 @@ void Server::recvDataAndBuildResp(int client_fd, int i)
 
 void Server::loop()
 {
-	int ready;
-	int client_fd;
+	int 				ready;
+	int 				client_fd;
 	std::vector<pollfd> pollfds;
+	size_t				pkt_len;
+    char        		chunk[BUFFER_SIZE];
 	
 	initPollfds(&pollfds);
 	while (true)
@@ -206,11 +208,17 @@ void Server::loop()
 
 			if (pollfds[i].revents & POLLIN &&
 			(_clients[j].getState() == Header || _clients[j].getState() == Body ))
-				_clients[j].receive();
+			{
+				pkt_len = recv(pollfds[i].fd, chunk, BUFFER_SIZE - 1, MSG_NOSIGNAL);
+				if (pkt_len > 0)
+					_clients[j].receive(chunk, pkt_len);
+				else
+					_clients[j].close();
+			}
 			else if ((pollfds[i].revents & POLLOUT) &&
 			(_clients[j].getState() == RespondingHeader || _clients[j].getState() == RespondingBody))
 				_clients[j].respond();
-			if ( _clients[j].getState() == Waiting && _clients[j].isExpired() )
+			if (_clients[j].isExpired())
 			{
 				std::cerr << "[" << pollfds[i].fd << "] Closed connection.(CONN_COUNT=" <<  _clients.size() << ")" << std::endl;
 				close(pollfds[i].fd);
