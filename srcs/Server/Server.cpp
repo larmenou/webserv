@@ -6,7 +6,7 @@
 /*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/26 18:05:08 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/26 18:08:30 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -176,7 +176,7 @@ void Server::loop()
 	int 				client_fd;
 	std::vector<pollfd> pollfds;
 	size_t				pkt_len;
-    char        		chunk[BUFFER_SIZE];
+	char        		chunk[BUFFER_SIZE];
 	
 	initPollfds(&pollfds);
 	while (true)

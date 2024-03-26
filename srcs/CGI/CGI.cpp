@@ -297,11 +297,11 @@ void    CGI::parseHeader(std::stringstream &ss)
 
 std::string CGI::respond()
 {
-    std::vector<std::string> out;
-    std::stringstream   ss;
-    std::string         line;
-    ssize_t  rd;
-    char    c;
+    std::vector<std::string>    out;
+    std::stringstream           ss;
+    std::string                 line;
+    ssize_t                     rd;
+    char                        c;
 
     waitTimeout(_pid);
     do {
