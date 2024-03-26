@@ -274,7 +274,10 @@ void    Client::bodyPut(char const *chunk, size_t start)
         if (_bodyc < 0)
             throw std::runtime_error("500");
         if (_bodyc >= _req.getContentLength())
+        {
+            _bodyc = 0;
             _state = RespondingHeader;
+        }
     } catch (std::exception &e)
     {
         _type = Error;
