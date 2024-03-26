@@ -233,18 +233,17 @@ void    Client::bodyRewrite(char const *chunk, size_t start)
 void    Client::bodyDelete(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
-    int fd;
+    std::string filename;
 
-    fd = open(("."+_req.getURN()).c_str(), O_RDONLY);
-    if (fd == -1)
+    filename = buildFilename();
+    if (!fileExists(filename))
     {
         _status = 204;
     }
     else
     {
         _status = 200;
-        close(fd);
-        remove(("."+_req.getURN()).c_str());
+        remove(filename.c_str());
     }
     _state = RespondingHeader;
 }
@@ -266,7 +265,6 @@ void    Client::bodyPut(char const *chunk, size_t start)
     try {
         std::string     upload_path;
 
-        std::cout << "UPLOADING" << std::endl;
         if (!buildUploadPath(_req, _route, upload_path))
             throw std::runtime_error("404");
         if (!_in.is_open())
@@ -448,7 +446,6 @@ void    Client::processBody(char const *chunk, size_t start)
 {
     if ((size_t)_bodyc + _pkt_length >= _server.getBodySizeLimit())
     {
-        std::cout << _bodyc << std::endl;
         _type = Error;
         _status = 413;
     }
