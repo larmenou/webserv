@@ -2,18 +2,7 @@
 
 void    CGI::getQueryString()
 {
-    _env["QUERY_STRING"] = "";
-    for (std::map<std::string, std::string>::const_iterator ite = _request->getURLParams().begin();
-        ite != _request->getURLParams().end();
-        ite++)
-    {
-        _env["QUERY_STRING"] += ite->first;
-        _env["QUERY_STRING"] += '=';
-        _env["QUERY_STRING"] += ite->second;
-        if (++ite != _request->getURLParams().end())
-            _env["QUERY_STRING"] += '&';
-        ite--;
-    }
+    _env["QUERY_STRING"] = _request->getURLParams();
 }
 
 void    CGI::getContentLength()

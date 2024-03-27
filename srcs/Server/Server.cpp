@@ -31,7 +31,7 @@ Server::Server(Config &conf) : 	_conf(conf),
 	struct sockaddr_in socketAddress;
 	std::set<std::pair<in_addr_t, in_port_t> >::const_iterator ite;
 	g_sig = 0;
-	
+
 	signal(SIGINT, &Server::signalHandler);
 	signal(SIGQUIT, &Server::signalHandler);
 
@@ -43,7 +43,6 @@ Server::Server(Config &conf) : 	_conf(conf),
 		socketAddress.sin_addr.s_addr = ite->first;
 		_socketAddresses.push_back(socketAddress);
 
-		std::cout << "i " << i << std::endl;
 		if (startServer(i) != 0)
 		{
 			std::cerr << "Failed to start server with PORT: " << ntohs(_socketAddresses[i].sin_port) << std::endl;

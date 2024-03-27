@@ -591,6 +591,7 @@ void    Client::receive(const char *chunk, size_t pkt_len)
         }
         if (_req.isParsed())
         {
+            std::cerr << _req << std::endl;
             initServerRoute();
             determineRequestType();
             _state = Body;

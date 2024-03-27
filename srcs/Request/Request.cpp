@@ -66,7 +66,7 @@ const std::string   Request::getHTTPVersion() const { return _http_ver; }
 const std::string   Request::getBody() const { return _body; }
 long                Request::getMethod() const { return _method; }
 const std::map<std::string, std::string>  &Request::getHeaders() const { return _headers; }
-const std::map<std::string, std::string>  &Request::getURLParams() const { return _getParams; }
+const std::string  &Request::getURLParams() const { return _query_string; }
 
 const std::string   Request::findHeader(std::string key) const
 {
@@ -106,16 +106,9 @@ void    Request::extractGETParams()
     size_t  s = _urn.find("?");
     if (s == std::string::npos || s + 1 > _urn.size())
         return ;
-    std::string params(_urn.substr(s + 1));
-    std::vector<std::string>    out;
-    split(params, out, '&');
-    for (size_t i = 0; i < out.size(); i++)
-    {
-        if (out[i].length() == 0)
-            continue;
-        size_t eq = out[i].find('=');
-        _getParams[out[i].substr(0, eq)] = eq != std::string::npos ? out[i].substr(eq + 1, out[i].size() - eq) : "";
-    }
+    size_t  e = _urn.find("#", s);
+    _query_string = _urn.substr(s + 1, e - s);
+
     _urn = _urn.substr(0, s);
 }
 
@@ -186,7 +179,6 @@ void    Request::reset()
     _http_ver.clear();
     _body.clear();
     _headers.clear();
-    _getParams.clear();
     _isParsed = false;
     _keep_alive = true;
     _method = 0;
@@ -194,18 +186,12 @@ void    Request::reset()
 
 std::ostream    &operator<<(std::ostream &os, const Request &req)
 {
-    std::map<std::string, std::string>::const_iterator ite = req.getHeaders().begin();
-
-    os << "Method:" << req.getMethod() << std::endl;
-    os << "URN:" << req.getURN() << std::endl;
-    os << "HTTP Version:" << req.getHTTPVersion() << std::endl;
-    os << "Headers:" << std::endl;
-    for (; ite != req.getHeaders().end(); ite++)
-        os << "\t" << ite->first << ":" << ite->second << std::endl;
-    os << "URLParams:" << std::endl;
-    ite = req.getURLParams().begin();
-    for (; ite != req.getURLParams().end(); ite++)
-        os << "\t" << ite->first << ":" << ite->second << std::endl;
-    os << "Body:" << req.getBody() << std::endl;
+    os << "[" << time(0) << "] " << Config::perm2str(req.getMethod());
+    os << " " << req.getURN();
+    os << " " << req.getHTTPVersion();
+    os << " User-Agent : \"";
+    os << req.findHeader("user-agent");
+    os << "\" " << req.getURLParams();
+    
     return os;
 }

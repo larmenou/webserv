@@ -24,7 +24,7 @@ class Request
         std::map<std::string, std::string>  _headers;
         ssize_t                             _content_length;
 
-        std::map<std::string, std::string>  _getParams;
+        std::string                         _query_string;
         bool                                _isParsed;
         bool                                _keep_alive;
 
@@ -48,7 +48,7 @@ class Request
         bool                isParsed() const;
         const std::string   findHeader(std::string key) const;
         const std::map<std::string, std::string>  &getHeaders() const;
-        const std::map<std::string, std::string>  &getURLParams() const;
+        const std::string   &getURLParams() const;
 
         const std::string   &respHeader();
         const std::string   &respBody();
