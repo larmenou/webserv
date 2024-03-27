@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/27 09:18:31 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/27 12:56:46 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ Server::~Server()
 {
 	closeServer();
 	signal(SIGINT, SIG_DFL);
+	signal(SIGQUIT, SIG_DFL);
 }
 
 int Server::startServer(int i)
@@ -91,6 +92,8 @@ void Server::closeServer()
 {
 	for (unsigned int i = 0; i < _sockets_listen.size(); i++)
 		close(_sockets_listen[i]);
+	for (unsigned int i = 0; i < _clients.size(); i++)
+		close(_clients[i].getFD());
 }
 
 void Server::initPollfds(std::vector<pollfd> *pollfds)
@@ -128,7 +131,7 @@ std::string Server::parseReferer(std::string referer)
 void Server::loop()
 {
 	int 				ready;
-	int 				client_fd;
+	int 				client_fd = -1;
 	std::vector<pollfd> pollfds;
 	sockaddr_in			client_addr;
 	size_t				pkt_len;
@@ -139,7 +142,8 @@ void Server::loop()
 	{
 		if (g_sig)
 		{
-			close(client_fd);
+			if (client_fd > 0)
+				close(client_fd);
 			break ;
 		}
 		ready = poll(pollfds.data(), pollfds.size(), 100);
@@ -147,7 +151,8 @@ void Server::loop()
 		{
 			if (errno == EINTR)
 			{
-				close(client_fd);
+				if (client_fd > 0)
+					close(client_fd);
 				break ;
 			}
 			std::cerr << "Poll failed." << std::endl;
