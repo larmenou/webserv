@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:29:40 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/20 13:57:32 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/27 15:50:31 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ int main (int ac, char **av)
 	} catch (std::exception &e)
 	{
 		std::cerr << "Error : " << e.what() << std::endl;
+		return (EXIT_FAILURE);
 	}
-
-	return (0);
+	return (EXIT_SUCCESS);
 }

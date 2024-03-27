@@ -239,8 +239,10 @@ void    Client::bodyCgi(char const *chunk, size_t start)
         if (_cgi.receive(chunk, start, _pkt_length))
             _state = RespondingHeader;
     } catch (std::exception &e) {
-        _cgi.closeCGI();
         _status = std::strtol(e.what(), NULL, 10);
+        if (_status)
+            throw std::runtime_error("Failed to execute CGI.");
+        _cgi.closeCGI();
         _type = Error;
         _state = RespondingHeader;
         return ;

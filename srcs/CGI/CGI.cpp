@@ -87,7 +87,7 @@ void    CGI::freeExecEnv()
     if (_env_execve != NULL)
     {
         for (size_t i = 0; i < _env.size(); i++)
-            delete _env_execve[i];
+            delete[] _env_execve[i];
         delete[] _env_execve;
     }
     _env_execve = NULL;
@@ -101,8 +101,8 @@ CGI::~CGI()
         close(_fds[0]);
         close(_fds[1]);
     }
-    if (_pid != -1)
-        kill(_pid, SIGSTOP);
+    if (_pid > 0)
+        kill(_pid, SIGKILL);
 }
 
 void    CGI::prepare(Request const &req,
@@ -185,7 +185,7 @@ void    CGI::childProc()
     execve(_cgi_path.c_str(), av, _env_execve);
     close(_fds[1]);
     close(_fds[0]);
-    exit(127);
+    throw std::runtime_error("666");
 }
 
 static void waitTimeout(pid_t pid)
@@ -200,13 +200,13 @@ static void waitTimeout(pid_t pid)
     {
         if (((clock() - start) / CLOCKS_PER_SEC) >= GATEWAY_TIMEOUT )
         {
-            kill(pid, SIGSTOP);
+            kill(pid, SIGKILL);
             throw std::runtime_error("504");
         }
     }
     if (ret < 0)
         throw std::runtime_error("500");
-    if (WIFEXITED(s) && WEXITSTATUS(s) == 127)
+    if (WIFEXITED(s) && WEXITSTATUS(s) != EXIT_SUCCESS)
         throw std::runtime_error("503");
 }
 
@@ -241,8 +241,8 @@ void    CGI::closeCGI()
         close(_fds[0]);
         close(_fds[1]);
     }
-    if (_pid != -1)
-        kill(_pid, SIGSTOP);
+    if (_pid > 0)
+        kill(_pid, SIGKILL);
     _env.clear();
     _headers.clear();
     _body.clear();
