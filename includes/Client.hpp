@@ -44,6 +44,7 @@ class Client
 {
     private :
         int                 _client_fd;
+        sockaddr_in         _client_addr;
         bool                _keep_alive;
         t_clientstate       _state;
         t_reqtype           _type;
@@ -97,11 +98,13 @@ class Client
         void    determineRequestType();
         void    initServerRoute();
         void    buildHeaderConnection(std::stringstream &http);
+        bool    isCGI();
 
     public :
         Client(int client_fd,
                 const Config *conf,
-                std::string server_ip);
+                std::string server_ip,
+                sockaddr_in c_addr);
         Client(Client const &client);
         ~Client();
         Client  &operator=(Client const &client);

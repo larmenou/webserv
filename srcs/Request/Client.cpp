@@ -2,8 +2,10 @@
 
 Client::Client(int client_fd,
                 const Config *conf,
-                std::string ip)
+                std::string ip,
+                sockaddr_in c_addr)
                 :   _client_fd(client_fd),
+                    _client_addr(c_addr),
                     _state(Header),
                     _type(Error),
                     _start(time(0)),
@@ -36,6 +38,7 @@ Client::Client(Client const &a)
 Client  &Client::operator=(Client const &client)
 {
     _client_fd = client._client_fd;
+    _client_addr = client._client_addr;
     _keep_alive = client._keep_alive;
     _state = client._state;
     _type = client._type;
@@ -78,6 +81,16 @@ void    Client::buildHeaderConnection(std::stringstream &http)
     _headers = http.str();
 }
 
+bool    Client::isCGI()
+{
+    std::string filename(buildFilename());
+    size_t  id = filename.find(_route.getCgiExtension());
+
+    if (id != std::string::npos && id == filename.size() - _route.getCgiExtension().size())
+        return true;
+    return false;
+}
+
 void    Client::determineRequestType()
 {
     if ((_req.getMethod() & _route.getMethodPerms()) == 0 && _req.getMethod() != DELETE)
@@ -86,7 +99,7 @@ void    Client::determineRequestType()
         _status = 405;
         _state = RespondingHeader;
     }
-    else if (_req.checkExtension(_route.getCgiExtension()))
+    else if (isCGI())
         _type = Cgi;
     else if (_req.getMethod() == PUT && _route.isAcceptingUploads())
         _type = Put;
@@ -196,6 +209,18 @@ void    Client::bodyError(char const *chunk, size_t start)
     _state = RespondingHeader;
 }
 
+static std::string  remote_addr(sockaddr_in addr)
+{
+    std::stringstream ss;
+
+    ss << (addr.sin_addr.s_addr & 0xff) << "."
+    << ((addr.sin_addr.s_addr & 0xff00)>>8) << "."
+    << ((addr.sin_addr.s_addr & 0xff0000)>>16) << "."
+    << ((addr.sin_addr.s_addr & 0xff000000)>>24);
+
+    return ss.str();
+}
+
 void    Client::bodyCgi(char const *chunk, size_t start)
 {
     (void) chunk; (void) start;
@@ -205,7 +230,7 @@ void    Client::bodyCgi(char const *chunk, size_t start)
         if (!_cgi.isStarted())
         {
             _cgi.setCGI(_route.getCgiPath());
-            _cgi.prepare(_req, _route, _server, "127.0.0.1");
+            _cgi.prepare(_req, _route, _server, remote_addr(_client_addr), buildFilename());
             _cgi.start();
         }
         if (_cgi.receive(chunk, start, _pkt_length))
@@ -372,7 +397,6 @@ void    Client::responsePut()
     {
         http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
         buildHeaderConnection(http);
-        std::cout << _headers << std::endl;
     }
     if (_state == RespondingHeader)
         sendHeader();

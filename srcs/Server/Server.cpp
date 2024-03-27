@@ -104,14 +104,14 @@ void Server::initPollfds(std::vector<pollfd> *pollfds)
     }
 }
 
-void Server::addPollfd(std::vector<pollfd> *pollfds, int client_fd, int i)
+void Server::addPollfd(std::vector<pollfd> *pollfds, int client_fd, sockaddr_in client_addr, int i)
 {
 	pollfd new_pollfd = {0, 0, 0};
 
 	new_pollfd.fd = client_fd;
 	new_pollfd.events = POLLIN | POLLOUT;
 	pollfds->push_back(new_pollfd);
-	_clients.push_back(Client(client_fd, &_conf, _servers[i].getIP()));
+	_clients.push_back(Client(client_fd, &_conf, _servers[i].getIP(), client_addr));
 	std::cerr << "[" << client_fd << "] New connection (CONN_COUNT="<<  _clients.size() << ")" << std::endl;
 }
 
@@ -175,6 +175,7 @@ void Server::loop()
 	int 				ready;
 	int 				client_fd;
 	std::vector<pollfd> pollfds;
+	sockaddr_in			client_addr;
 	size_t				pkt_len;
 	char        		chunk[BUFFER_SIZE];
 	
@@ -196,9 +197,9 @@ void Server::loop()
 			{
 				if (pollfds[i].revents & POLLIN)
 				{
-					acceptConnection(client_fd, i);
+					client_addr = acceptConnection(client_fd, i);
 					if (client_fd != -1)
-						addPollfd(&pollfds, client_fd, i);
+						addPollfd(&pollfds, client_fd, client_addr, i);
 				}
 			}
 		}
@@ -229,13 +230,15 @@ void Server::loop()
 	}
 }
 
-void Server::acceptConnection(int &new_socket, int i)
+sockaddr_in	Server::acceptConnection(int &new_socket, int i)
 {
 	sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
+
 	new_socket = accept(_sockets_listen[i], (sockaddr *)&client_addr, &client_len);
 	if (new_socket == -1)
 		std::cerr << "Server failed to accept incoming connection" << std::endl;
+	return client_addr;
 }
 
 static bool	isDir(std::string path)
@@ -262,7 +265,7 @@ int Server::buildCgiResp(std::string *headers, Request const &req, Route route, 
 	int status;
 
 	cgi.setCGI("/usr/bin/php-cgi");
-	cgi.prepare(req,route,_servers[i],"127.0.0.1");
+	cgi.prepare(req,route,_servers[i],"127.0.0.1", buildFilename(route, req, i));
 	try {
 		cgi.start();
 		_body_response = cgi.getBody();

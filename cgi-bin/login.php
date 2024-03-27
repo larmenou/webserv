@@ -17,7 +17,7 @@ if (isset($_POST['username']) && isset($_POST['password']))
         header('Location: ./login.php?error=1');
     else if ($users[$username] === sha1($password))
     {
-        header('Location: ./greet.php');
+        header('Location: ./index.php');
         setcookie("user", $username);
     }
     else
@@ -25,7 +25,7 @@ if (isset($_POST['username']) && isset($_POST['password']))
 }
 
 if (isset($_COOKIE["user"]))
-    header("Location: ./greet.php");
+    header("Location: ./index.php");
 ?>
 
 <!DOCTYPE html>

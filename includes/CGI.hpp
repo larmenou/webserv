@@ -33,7 +33,6 @@ class CGI
         CGI(CGI const &a);
         CGI  &operator=(CGI const &a);
 
-        void    getPathInfo();
         void    getQueryString();
         void    getContentLength();
         void    getContentType();
@@ -56,7 +55,8 @@ class CGI
         void        prepare(Request const &req,
                         Route const &route,
                         ServerConf const &server,
-                        std::string remoteaddr);
+                        std::string remoteaddr,
+                        std::string path_info);
         void        start();
         bool        receive(const char *chunk, size_t start, size_t _pkt_len);
         std::string respond();

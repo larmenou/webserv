@@ -1,13 +1,5 @@
 #include "CGI.hpp"
 
-void    CGI::getPathInfo()
-{
-    std::string rel_path(_request->getURN().substr(_route->getRoute().length()));
-    _env["PATH_INFO"] = "";
-    _env["PATH_INFO"] += _route->getRoot();
-    _env["PATH_INFO"] += rel_path;
-}
-
 void    CGI::getQueryString()
 {
     _env["QUERY_STRING"] = "";
@@ -116,23 +108,22 @@ CGI::~CGI()
 void    CGI::prepare(Request const &req,
                         Route const &route,
                         ServerConf const &server,
-                        std::string remoteaddr)
+                        std::string remoteaddr,
+                        std::string path_info)
 {
-    std::string query_string;
-    std::string path_info;
     std::stringstream ss;
 
     _request    = &req;
     _route      = &route;
     _status     = 200;
     _env.clear();
-    getPathInfo();
     getQueryString();
     getContentLength();
     getRequestMethod();
     getContentType();
     getServerName(server);
     getHeaders();
+    _env["PATH_INFO"] = path_info;
     _env["REDIRECT_STATUS"] = "true";
     _env["GATEWAY_INTERFACE"] = "CGI/1.1";
     _env["SCRIPT_FILENAME"] = _env["PATH_INFO"];

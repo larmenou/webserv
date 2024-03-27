@@ -55,11 +55,11 @@ class Server
 
 		int 			startServer(int i);
 		void 			closeServer();
-		void 			acceptConnection(int &new_socket, int i);
+		sockaddr_in 	acceptConnection(int &new_socket, int i);
 		void 			buildResponse(Request const &req, int i, int client_fd);
 		void 			sendResponse(int client_fd);
 		void 			initPollfds(std::vector<pollfd> *pollfds);
-		void 			addPollfd(std::vector<pollfd> *pollfds, int client_fd, int i);
+		void 			addPollfd(std::vector<pollfd> *pollfds, int client_fd, sockaddr_in client_addr, int i);
 		void 			recvDataAndBuildResp(int client_fd, int i);
 		
 		int 			buildCgiResp(std::string *headers, Request const &req, Route route, int i);
