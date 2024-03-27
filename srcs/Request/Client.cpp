@@ -3,9 +3,11 @@
 Client::Client(int client_fd,
                 const Config *conf,
                 std::string ip,
-                sockaddr_in c_addr)
+                sockaddr_in c_addr,
+                sockaddr_in serv_addr)
                 :   _client_fd(client_fd),
                     _client_addr(c_addr),
+                    _server_addr(serv_addr),
                     _state(Header),
                     _type(Error),
                     _start(time(0)),
@@ -41,6 +43,7 @@ Client  &Client::operator=(Client const &client)
 {
     _client_fd = client._client_fd;
     _client_addr = client._client_addr;
+    _server_addr = client._server_addr;
     _keep_alive = client._keep_alive;
     _state = client._state;
     _type = client._type;
@@ -65,10 +68,10 @@ Client::~Client()
 
 void    Client::initServerRoute()
 {
-    size_t  end_hostname = _req.findHeader("hostname").find(":");
-    std::string hostname(_req.findHeader("hostname").substr(0, end_hostname));
+    size_t  end_hostname = _req.findHeader("Host").find(":");
+    std::string hostname(_req.findHeader("Host").substr(0, end_hostname));
     
-    _server = _conf->getServerFromHostAndIP(hostname, _ip);
+    _server = _conf->getServerFromHostAndIPPort(hostname, _ip, _server_addr);
     _route = _server.findRouteFromURN(_req.getURN());
 }
 

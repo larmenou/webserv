@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/27 14:47:25 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/27 20:38:07 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,18 +29,21 @@ Server::Server(Config &conf) : 	_conf(conf),
 								_default_root("./html")
 {
 	struct sockaddr_in socketAddress;
+	std::set<std::pair<in_addr_t, in_port_t> >::const_iterator ite;
 	g_sig = 0;
 	
 	signal(SIGINT, &Server::signalHandler);
 	signal(SIGQUIT, &Server::signalHandler);
 
-	for (unsigned int i = 0; i < _conf.getServers().size(); i++)
+	ite = _conf.getListens().begin();
+	for (size_t i = 0; ite != _conf.getListens().end(); ite++, i++)
 	{
 		socketAddress.sin_family = AF_INET;
-		socketAddress.sin_port = htons(_conf.getServers()[i].getPort());
-		socketAddress.sin_addr.s_addr = INADDR_ANY;
+		socketAddress.sin_port = ite->second;
+		socketAddress.sin_addr.s_addr = ite->first;
 		_socketAddresses.push_back(socketAddress);
 
+		std::cout << "i " << i << std::endl;
 		if (startServer(i) != 0)
 		{
 			std::cerr << "Failed to start server with PORT: " << ntohs(_socketAddresses[i].sin_port) << std::endl;
@@ -117,7 +120,7 @@ void Server::addPollfd(std::vector<pollfd> *pollfds, int client_fd, sockaddr_in 
 	new_pollfd.fd = client_fd;
 	new_pollfd.events = POLLIN | POLLOUT;
 	pollfds->push_back(new_pollfd);
-	_clients.push_back(Client(client_fd, &_conf, _servers[i].getIP(), client_addr));
+	_clients.push_back(Client(client_fd, &_conf, _servers[i].getIP(), client_addr, _socketAddresses[i]));
 	std::cerr << "[" << client_fd << "] New connection (CONN_COUNT="<<  _clients.size() << ")" << std::endl;
 }
 
@@ -164,7 +167,7 @@ void Server::loop()
 
 		if (_clients.size() < MAX_CLIENTS)
 		{
-			for (unsigned int i = 0; i < _servers.size(); i++)
+			for (unsigned int i = 0; i < _conf.getListens().size(); i++)
 			{
 				if (pollfds[i].revents & POLLIN)
 				{
@@ -174,9 +177,9 @@ void Server::loop()
 				}
 			}
 		}
-		for (size_t i = _servers.size(); i < pollfds.size(); i++)
+		for (size_t i = _conf.getListens().size(); i < pollfds.size(); i++)
 		{
-			size_t j = i - _servers.size();
+			size_t j = i - _conf.getListens().size();
 
 			if (pollfds[i].revents & POLLIN)
 			{
@@ -209,146 +212,4 @@ sockaddr_in	Server::acceptConnection(int &new_socket, int i)
 	if (new_socket == -1)
 		std::cerr << "Server failed to accept incoming connection" << std::endl;
 	return client_addr;
-}
-
-static bool	isDir(std::string path)
-{
-	struct stat	s;
-
-	if (stat(path.c_str(), &s) == -1)
-		return false;
-	return (s.st_mode & S_IFMT) == S_IFDIR;
-}
-
-static bool	fileExists(std::string path)
-{
-	struct stat	s;
-
-	if (stat(path.c_str(), &s) == -1)
-		return false;
-	return true;
-}
-
-int Server::buildCgiResp(std::string *headers, Request const &req, Route route, int i)
-{
-	CGI cgi;
-	int status;
-
-	cgi.setCGI("/usr/bin/php-cgi");
-	cgi.prepare(req,route,_servers[i],"127.0.0.1", buildFilename(route, req, i));
-	try {
-		cgi.start();
-		_body_response = cgi.getBody();
-		status = cgi.getStatus();
-		*headers = cgi.buildRawHeader();
-	} catch (std::exception &e) {
-		_body_response = HTTPError::buildErrorPage(_servers[i], 
-													status = std::strtol(e.what(), NULL, 10));
-	}
-	return (status);
-}
-
-void Server::buildRedirResp(Route route, int client_fd)
-{
-	int status;
-	std::stringstream http;
-	
-	status = route.getRedirCode();
-	http << "HTTP/1.1" << " " << status << " " << HTTPError::getErrorString(status) << "\r\nLocation: " << route.getRewrite() << "\r\nContent-Length: 0\r\n";
-	_header_response = http.str();
-	
-	send(client_fd, _header_response.c_str(), _header_response.size(), 0);
-}
-
-int Server::buildBodyResp(std::string filename, Request const &req, Route route, int i)
-{
-	int status = 200;
-	int fd;
-
-	if (isDir(filename) && route.isListingDirs())
-		_body_response = DirLister().generate_body(filename, req);
-	else if (fileExists(filename))
-	{
-		fd = open(filename.c_str(), O_RDONLY);
-		if (fd == -1)
-			_body_response = HTTPError::buildErrorPage(_servers[i], status = 403);
-		char c;
-		while (read(fd, &c, 1) > 0)
-			_body_response += c;
-		close(fd);
-	}
-	else
-		_body_response = HTTPError::buildErrorPage(_servers[i], status = 404);
-	return (status);
-}
-
-std::string Server::buildFilename(Route route, Request const &req, int i)
-{
-	std::string filename;
-	std::string root;
-	
-	if (route.getRoot().length() == 0)
-		root = _servers[i].getRoot();
-	else
-		root = route.getRoot();
-	filename = root;
-	filename += req.getURN().substr(route.getRoute().length());
-	if (isDir(filename))
-		filename += "/" + route.getDirFile();
-	return (filename);
-}
-
-void Server::buildHeaderConnection(std::string headers, Request const &req, std::stringstream *http)
-{
-	if (req.getHeaders().find("connection")->second == "keep-alive")
-	{
-		*http << "Connection: keep-alive\r\n" << headers << "\r\n";
-		_header_response = http->str();
-	}
-	else
-	{
-		*http << "Connection: close\r\n" << headers << "\r\n";
-		_header_response = http->str();
-	}
-}
-
-static bool	buildUploadPath(const Request &req, const Route &route, std::string &out)
-{	
-	out = route.getSavePath();
-	out += req.getURN().substr(route.getRoute().length());
-
-	return true;
-}
-
-void Server::basicUpload(const Request &req, const Route &route)
-{
-	std::ofstream	of;
-	std::string		upload_path;
-
-	buildUploadPath(req, route, upload_path);
-	of.open(upload_path.c_str(), std::ios::out);
-	if (!of.is_open())
-	{
-		if (fileExists(upload_path) || isDir(upload_path))
-			throw std::runtime_error("403");
-		else
-			throw std::runtime_error("500");
-	}
-	of << req.getBody();
-	of.close();
-}
-
-int	Server::handleUpload(const Request &req, const Route &route, int i)
-{
-	std::string					content_type;
-	int							status = 201;
-
-	strtolower(content_type = req.findHeader("content-type"));
-	try {
-		basicUpload(req, route);
-	} catch (std::exception &e)
-	{
-		_body_response = HTTPError::buildErrorPage(_servers[i], status = std::strtol(e.what(), NULL, 10));
-	}
-	return status;
 }

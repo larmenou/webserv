@@ -4,6 +4,7 @@
 # include <iostream>
 # include <vector>
 # include <map>
+# include <set>
 # include <fstream>
 # include <sstream>
 # include <arpa/inet.h>
@@ -28,12 +29,13 @@ void    readAllFile(std::ifstream &fs, std::string &out);
 class   Config
 {
     private :
-        static std::map<std::string, long> str2permmap;
-        std::vector<ServerConf> _servers;
+        static std::map<std::string, long>  str2permmap;
+        std::vector<ServerConf>             _servers;
+        std::string                         _file;
+        bool                                _isInit;
+        std::set<std::pair<in_addr_t, in_port_t> > _listensIpPort;
         std::map<std::string, bool (Config::*)(std::vector<std::string>&, ServerConf&)>   serverUpdateFuncs;
         std::map<std::string, bool (Config::*)(std::vector<std::string>&, Route&)>   routeUpdateFuncs;
-        std::string             _file;
-        bool                    _isInit;
 
         void                parse();
         void                parseServer(size_t left, size_t right);
@@ -68,10 +70,11 @@ class   Config
         ~Config();
 
         void    initConfig(std::string &config_path);
-        const ServerConf    &getServerFromHostAndIP(std::string host, std::string ip) const;
+        const ServerConf    &getServerFromHostAndIPPort(std::string host, std::string ip, sockaddr_in addr) const;
         std::vector<ServerConf>   &getServers();
         static long         str2perm(std::string &method_str);
         static std::string  perm2str(long perm);
+        const std::set<std::pair<in_addr_t, in_port_t> > &getListens();
 };
 
 #endif

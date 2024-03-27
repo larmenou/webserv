@@ -249,9 +249,11 @@ bool    Config::server_name(std::vector<std::string> &dirs, ServerConf &conf)
 
 bool    Config::listen(std::vector<std::string> &dirs, ServerConf &conf)
 {
-    std::vector<std::string>    out;
-    long                        port;
-    char                        *endptr;
+    std::vector<std::string>        out;
+    long                            port;
+    in_addr_t                       addr;
+    char                            *endptr;
+    std::pair<in_addr_t, in_port_t> ipport;
 
     if (dirs.size() != 2)
         return false;
@@ -260,19 +262,23 @@ bool    Config::listen(std::vector<std::string> &dirs, ServerConf &conf)
         split(dirs[1], out, ':');
         if (out.size() != 2)
             return false;
-        if (inet_addr(out[0].c_str()) == (in_addr_t)(-1))
+        if ((addr = inet_addr(out[0].c_str())) == (in_addr_t)(-1))
             return false;
         port = std::strtol(out[1].c_str(), &endptr, 10);
         if (*endptr != 0 || port < 1 || port > 65535)
             return false;
         conf.setIP(out[0]);
         conf.setPort(port);
+        ipport = std::make_pair(addr, htons(port));
+        _listensIpPort.insert(ipport);
     }
     else
     {
         port = std::strtol(dirs[1].c_str(), &endptr, 10);
         if (*endptr != 0 || port < 1 || port > 65535)
             return false;
+        ipport = std::make_pair(INADDR_ANY, htons(port));
+        _listensIpPort.insert(ipport);
         conf.setPort(port);
     }
     return true;
@@ -437,7 +443,7 @@ bool    Config::save_path(std::vector<std::string> &dirs, Route &conf)
     return true;
 }
 
-const ServerConf    &Config::getServerFromHostAndIP(std::string host, std::string ip) const
+const ServerConf    &Config::getServerFromHostAndIPPort(std::string host, std::string ip, sockaddr_in addr) const
 {
     bool        foundIP;
     size_t      server_idx = 0;
@@ -445,7 +451,8 @@ const ServerConf    &Config::getServerFromHostAndIP(std::string host, std::strin
     foundIP = false;
     for (size_t i = 0; i < _servers.size(); i++)
     {
-        if (_servers[i].getIP() == ip || ip == "0.0.0.0")
+        if ((_servers[i].getIP() == ip || ip == "0.0.0.0") 
+            && addr.sin_port == htons(_servers[i].getPort()))
         {
             if (foundIP == false)
             {
@@ -457,11 +464,16 @@ const ServerConf    &Config::getServerFromHostAndIP(std::string host, std::strin
         }
     }
     if (foundIP == false && host != "")
-        throw std::runtime_error("IP not found.");
+        return _servers[0];
     return _servers[server_idx];
 }
 
 std::vector<ServerConf>   &Config::getServers()
 {
     return _servers;
+}
+
+const std::set<std::pair<in_addr_t, in_port_t> > &Config::getListens()
+{
+    return _listensIpPort;
 }
