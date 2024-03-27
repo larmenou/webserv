@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/27 08:26:38 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/27 09:04:36 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -123,51 +123,6 @@ std::string Server::parseReferer(std::string referer)
 	if (out[out.size() - 1].find("html") != std::string::npos)
 		return (out[out.size() - 1]);
 	return ("");
-}
-
-void Server::recvDataAndBuildResp(int client_fd, int i)
-{
-	char buffer[BUFF_SIZE];
-	int bytesReceived;
-	//bool auth;
-	
-	bytesReceived = read(client_fd, buffer, BUFF_SIZE - 1);
-	if (bytesReceived > 0)
-	{
-		buffer[bytesReceived] = '\0';
-		std::cout << "------ Received Request from client ------\n\n";
-
-		std::cout << buffer << std::endl;
-
-		std::stringstream ss(buffer);
-		std::string str = ss.str();
-		try
-		{
-			Request req;
-
-			//req.receive_header(buffer);
-			/*if (_conf.getServers()[i].getBodySizeLimit() > req.getBody().size())
-			{
-				std::string str = req.getBody();
-				if (parseReferer(req.findHeader("referer")) == "form.html")
-				{
-					_conf.getServers()[i].addUser(str);
-				}
-				else if (parseReferer(req.findHeader("referer")) == "connexion.html")
-				{        new_pollfd.events = POLLIN;
-					auth = _conf.getServers()[i].authenticateUser(str);
-					std::cout << "auth ? " << auth << std::endl;
-				}
-			}*/
-			buildResponse(req, i, client_fd);
-		} catch (std::exception &e)
-		{
-			std::stringstream http;
-			_body_response = HTTPError::buildErrorPage(_servers[i], 400);
-			http << "HTTP/1.1" << " " << 400 << " " << HTTPError::getErrorString(400) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-			sendResponse(client_fd);
-		}
-	}
 }
 
 void Server::loop()
@@ -383,59 +338,4 @@ int	Server::handleUpload(const Request &req, const Route &route, int i)
 		_body_response = HTTPError::buildErrorPage(_servers[i], status = std::strtol(e.what(), NULL, 10));
 	}
 	return status;
-}
-
-void Server::buildResponse(Request const &req, int i, int client_fd)
-{
-	std::stringstream http;
-	std::string filename;
-	std::string headers;
-	int status = 200;
-	const Route &route = _servers[i].findRouteFromURN(req.getURN());
-
-	_body_response.clear();
-	if (req.getURN() != "/favicon.ico")
-	{
-		if ((req.getMethod() & route.getMethodPerms()) == 0)
-			_body_response = HTTPError::buildErrorPage(_servers[i], status = 405);
-		else if (_servers[i].getBodySizeLimit() <= req.getBody().size())
-		{
-			_body_response = HTTPError::buildErrorPage(_servers[i], status = 413);
-		}
-		else if (req.getMethod() == PUT && route.isAcceptingUploads())
-			status = handleUpload(req, route, i);
-		else
-		{
-			if (route.getRewrite().size() > 0)
-			{
-				buildRedirResp(route, client_fd);
-				return ;
-			}
-
-			filename = buildFilename(route, req, i);
-			if (req.checkExtension(route.getCgiExtension()))
-			{
-				status = buildCgiResp(&headers, req, route, i);
-			}
-			else
-			{
-				status = buildBodyResp(filename, req, route, i);
-			}
-		}
-		http << "HTTP/1.1" << " " << status << " " << HTTPError::getErrorString(status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
-	}
-	
-	buildHeaderConnection(headers, req, &http);
-
-	http.clear();
-	http.str("");
-
-	sendResponse(client_fd);
-}
-
-void Server::sendResponse(int client_fd)
-{
-	send(client_fd, _header_response.c_str(), _header_response.size(), 0);
-	send(client_fd, _body_response.c_str(), _body_response.size(), 0);
-	std::cerr << "------ Server Response sent to client ------\n\n";
 }

@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:25 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/26 15:03:19 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/27 09:04:26 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,11 +56,8 @@ class Server
 		int 			startServer(int i);
 		void 			closeServer();
 		sockaddr_in 	acceptConnection(int &new_socket, int i);
-		void 			buildResponse(Request const &req, int i, int client_fd);
-		void 			sendResponse(int client_fd);
 		void 			initPollfds(std::vector<pollfd> *pollfds);
 		void 			addPollfd(std::vector<pollfd> *pollfds, int client_fd, sockaddr_in client_addr, int i);
-		void 			recvDataAndBuildResp(int client_fd, int i);
 		
 		int 			buildCgiResp(std::string *headers, Request const &req, Route route, int i);
 		void 			buildRedirResp(Route route, int client_fd);
