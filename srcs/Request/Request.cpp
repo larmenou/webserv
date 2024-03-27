@@ -50,7 +50,7 @@ void strtolower(std::string &str)
         str[i] = std::tolower(str[i]);
 }
 
-Request::Request() : _isParsed(false), _keep_alive(true)
+Request::Request() : _content_length(0), _isParsed(false), _keep_alive(true)
 {
 }
 

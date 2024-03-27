@@ -11,6 +11,7 @@ Client::Client(int client_fd,
                     _start(time(0)),
                     _conf(conf),
                     _ip(ip),
+                    _pkt_length(0),
                     _bodyc(0)
 {
     _body_functions[Cgi] = &Client::bodyCgi;
@@ -522,6 +523,7 @@ void    Client::receive(const char *chunk, size_t pkt_len)
             initServerRoute();
             determineRequestType();
             _state = Body;
+            _bodyc = 0;
         }
     }
     if (_state == Body)

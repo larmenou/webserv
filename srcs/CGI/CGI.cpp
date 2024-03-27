@@ -18,7 +18,7 @@ void    CGI::getQueryString()
 
 void    CGI::getContentLength()
 {
-    std::stringstream ss;
+    std::stringstream ss("");
 
     ss << _request->getContentLength();
     _env["CONTENT_LENGTH"] = ss.str();
