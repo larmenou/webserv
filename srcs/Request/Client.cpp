@@ -72,6 +72,34 @@ void    Client::initServerRoute()
     _route = _server.findRouteFromURN(_req.getURN());
 }
 
+static bool	isDir(std::string path)
+{
+	struct stat	s;
+
+	if (stat(path.c_str(), &s) == -1)
+		return false;
+	return (s.st_mode & S_IFMT) == S_IFDIR;
+}
+
+
+static bool	fileExists(std::string path)
+{
+	struct stat	s;
+
+	if (stat(path.c_str(), &s) == -1)
+		return false;
+	return true;
+}
+
+static size_t fileSize(std::string filename)
+{
+	struct stat	s;
+
+	if (stat(filename.c_str(), &s) == -1)
+		return 0;
+	return s.st_size;
+}
+
 void    Client::buildHeaderConnection(std::stringstream &http)
 {
     std::string connection;
@@ -86,12 +114,37 @@ void    Client::buildHeaderConnection(std::stringstream &http)
 
 bool    Client::isCGI()
 {
-    std::string filename(buildFilename());
-    size_t  id = filename.find(_route.getCgiExtension());
+    std::string filename;
+    std::string root;
+    size_t      id;
 
-    if (id != std::string::npos && id == filename.size() - _route.getCgiExtension().size())
-        return true;
-    return false;
+    if (_route.getCgiPath().size() == 0)
+        return false;
+    if (_route.getDirFile().size() == 0)
+    {
+        id = _req.getURN().find(_route.getCgiExtension());
+        if (id == std::string::npos)
+            return false;
+        if (id != _req.getURN().size() - _route.getCgiExtension().size())
+            return false;
+    }
+    else
+    {
+        if (_route.getRoot().length() == 0)
+            root = _server.getRoot();
+        else
+            root = _route.getRoot();
+        filename = root + "/";
+        filename += _req.getURN().substr(_route.getRoute().length());
+        if (isDir(filename) && _req.getURN()[_req.getURN().size() - 1] != '/')
+            return false;
+        id = _route.getDirFile().find(_route.getCgiExtension());
+        if (id == std::string::npos)
+            return false;
+        if (id != _route.getDirFile().size() - _route.getCgiExtension().size())
+            return false;
+    }
+    return true;
 }
 
 void    Client::determineRequestType()
@@ -121,33 +174,6 @@ void    Client::determineRequestType()
     }
 }
 
-static bool	isDir(std::string path)
-{
-	struct stat	s;
-
-	if (stat(path.c_str(), &s) == -1)
-		return false;
-	return (s.st_mode & S_IFMT) == S_IFDIR;
-}
-
-
-static bool	fileExists(std::string path)
-{
-	struct stat	s;
-
-	if (stat(path.c_str(), &s) == -1)
-		return false;
-	return true;
-}
-
-static size_t fileSize(std::string filename)
-{
-	struct stat	s;
-
-	if (stat(filename.c_str(), &s) == -1)
-		return 0;
-	return s.st_size;
-}
 
 std::string Client::buildFilename()
 {
@@ -161,8 +187,8 @@ std::string Client::buildFilename()
 
 	filename = root + "/";
 	filename += _req.getURN().substr(_route.getRoute().length());
-	if (isDir(filename))
-		filename += "/" + _route.getDirFile();
+	if (isDir(filename) && _req.getURN()[_req.getURN().size() - 1] == '/')
+		filename += _route.getDirFile();
 	return (filename);
 }
 
@@ -178,12 +204,28 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
     {
         if (!_out.is_open())
         {
-            if (isDir(filename) && _route.isListingDirs())
+            if (isDir(filename))
             {
-                _body_response = DirLister().generate_body(filename, _req);
-                _body_len = _body_response.length();
+                if (_route.isListingDirs())
+                {
+                    _body_response = DirLister().generate_body(filename, _req);
+                    _body_len = _body_response.length();
+                }
+                else if (_req.getURN()[_req.getURN().size() - 1] != '/')
+                {
+                    std::stringstream http;
+
+                    http << "HTTP/1.1" << " " << 302 << " " << HTTPError::getErrorString(302) 
+                    << "\r\nLocation: " << _req.getURN() << '/'
+                    << "\r\nContent-Length: 0\r\n\r\n";
+                    _headers = http.str();
+                    _state = RespondingHeader;
+                    _body_len = 0;
+                }
+                else
+                    throw std::runtime_error("404");
             }
-            else if (fileExists(filename) && !isDir(filename))
+            else if (fileExists(filename))
             {
                 _out.open(filename.c_str());
                 if (!_out.is_open() || _out.fail())
@@ -269,12 +311,13 @@ void    Client::bodyDelete(char const *chunk, size_t start)
     filename = buildFilename();
     if (!fileExists(filename))
     {
-        _status = 204;
+        _status = 404;
     }
     else
     {
-        _status = 200;
-        remove(filename.c_str());
+        _status = 204;
+        if (remove(filename.c_str()))
+            _status = 403;
     }
     _state = RespondingHeader;
 }
@@ -301,6 +344,8 @@ void    Client::bodyPut(char const *chunk, size_t start)
         if (!_in.is_open())
         {
             _bodyc = 0;
+            if (!isDir(_route.getSavePath()))
+                throw std::runtime_error("500");
             _in.open(upload_path.c_str());
             if (_in.fail() || !_in.is_open())
             {
