@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/27 12:56:46 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/27 14:47:25 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,7 @@ Server::Server(Config &conf) : 	_conf(conf),
 		if (startServer(i) != 0)
 		{
 			std::cerr << "Failed to start server with PORT: " << ntohs(_socketAddresses[i].sin_port) << std::endl;
-			exit(1);
+			throw std::runtime_error("Port error");
 		}
 	}
 }
@@ -63,23 +63,26 @@ int Server::startServer(int i)
 	
 	if (setsockopt(socket_listen, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
 	{
+		close(socket_listen);
 		std::cerr << "Error setting SO_REUSEADDR" << std::endl;
 		return (1);
 	}
 	if (socket_listen < 0)
 	{
+		close(socket_listen);
 		std::cerr << "Cannot create socket" << std::endl;
 		return (1);
 	}
 	if (bind(socket_listen, (sockaddr *)&_socketAddresses[i], sizeof(_socketAddresses[i])) < 0)
 	{
+		close(socket_listen);
 		std::cerr << "Cannot connect socket to address" << std::endl;
 		return (1);
 	}
 	if (listen(socket_listen, 20) < 0)
 	{
-		std::cerr << "Socket listen failed" << std::endl;
-		exit(1);
+		close(socket_listen);
+		throw std::runtime_error("Socket listen failed");
 	}
 
 	std::cerr << "\n*** Listening on ADDRESS: " << _conf.getServers()[i].getIP() << " PORT: " << _conf.getServers()[i].getPort() << " ***\n\n";
@@ -175,14 +178,13 @@ void Server::loop()
 		{
 			size_t j = i - _servers.size();
 
-			if (pollfds[i].revents & POLLIN &&
-			(_clients[j].getState() == Header || _clients[j].getState() == Body ))
+			if (pollfds[i].revents & POLLIN)
 			{
 				pkt_len = recv(pollfds[i].fd, chunk, BUFFER_SIZE - 1, MSG_NOSIGNAL);
-				if (pkt_len > 0)
-					_clients[j].receive(chunk, pkt_len);
-				else
+				if (pkt_len <= 0)
 					_clients[j].close();
+				if (_clients[j].getState() == Header || _clients[j].getState() == Body)
+					_clients[j].receive(chunk, pkt_len);
 			}
 			else if ((pollfds[i].revents & POLLOUT) &&
 			(_clients[j].getState() == RespondingHeader || _clients[j].getState() == RespondingBody))

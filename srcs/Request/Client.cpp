@@ -11,6 +11,7 @@ Client::Client(int client_fd,
                     _start(time(0)),
                     _conf(conf),
                     _ip(ip),
+                    _body_response(""),
                     _pkt_length(0),
                     _bodyc(0)
 {
@@ -52,6 +53,7 @@ Client  &Client::operator=(Client const &client)
     _body_functions = client._body_functions;
     _reponse_functions = client._reponse_functions;
     _body_response = client._body_response;
+    _bodyc = client._bodyc;
     _headers = client._headers;
 
     return *this;
@@ -326,10 +328,18 @@ void    Client::bodyPut(char const *chunk, size_t start)
 
 void    Client::sendHeader()
 {
-    _bodyc += send(_client_fd,
+    ssize_t ret;
+
+    ret = send(_client_fd,
                     _headers.c_str() + _bodyc, 
                     _headers.size() - _bodyc,
                     MSG_NOSIGNAL);
+    if (ret < 0)
+    {
+        _keep_alive = false;
+        resetOrClose();
+    }
+    _bodyc += ret;
     if (_bodyc >= (ssize_t)_headers.size())
     {
         _bodyc = 0;
@@ -339,10 +349,17 @@ void    Client::sendHeader()
 
 void    Client::sendBodyResponse()
 {
-    _bodyc += send(_client_fd,
+    ssize_t ret;
+
+    ret = send(_client_fd,
                 _body_response.c_str() + _bodyc, 
                 _body_response.size() - _bodyc,
                 MSG_NOSIGNAL);
+    if (ret < 0)
+    {
+        _keep_alive = false;
+        resetOrClose();
+    }
     if (_bodyc >= (ssize_t)_body_response.size())
         resetOrClose();
 }
@@ -490,6 +507,7 @@ void    Client::processBody(char const *chunk, size_t start)
     {
         _bodyc = 0;
         _type = Error;
+        _state = RespondingHeader;
         _status = 413;
     }
     ((this)->*(_body_functions[_type]))(chunk, start);
@@ -497,8 +515,11 @@ void    Client::processBody(char const *chunk, size_t start)
 
 void    Client::respond()
 {
-    _start = time(0);
-    ((this)->*(_reponse_functions[_type]))();
+    if (_state == RespondingHeader || _state == RespondingBody)
+    {
+        _start = time(0);
+        ((this)->*(_reponse_functions[_type]))();
+    }
 }
 
 void    Client::receive(const char *chunk, size_t pkt_len)
