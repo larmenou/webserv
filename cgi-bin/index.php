@@ -1,7 +1,7 @@
 <?php
-    session_start();
     if (!isset($_COOKIE["user"])) 
         header('Location: login.php');
+    session_start();
 ?>
 <!DOCTYPE html>
 <html>

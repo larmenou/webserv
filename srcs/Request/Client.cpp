@@ -206,12 +206,7 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
         {
             if (isDir(filename))
             {
-                if (_route.isListingDirs())
-                {
-                    _body_response = DirLister().generate_body(filename, _req);
-                    _body_len = _body_response.length();
-                }
-                else if (_req.getURN()[_req.getURN().size() - 1] != '/')
+                if (_req.getURN()[_req.getURN().size() - 1] != '/')
                 {
                     std::stringstream http;
 
@@ -221,6 +216,11 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
                     _headers = http.str();
                     _state = RespondingHeader;
                     _body_len = 0;
+                }
+                else if (_route.isListingDirs())
+                {
+                    _body_response = DirLister().generate_body(filename, _req);
+                    _body_len = _body_response.length();
                 }
                 else
                     throw std::runtime_error("404");
