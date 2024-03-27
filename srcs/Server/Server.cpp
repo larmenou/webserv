@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/26 18:08:30 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/27 08:26:38 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -187,6 +187,8 @@ void Server::loop()
 		ready = poll(pollfds.data(), pollfds.size(), 100);
 		if (ready == -1)
 		{
+			if (errno == EINTR)
+				break ;
 			std::cerr << "Poll failed." << std::endl;
 			break ;
 		}
