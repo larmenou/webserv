@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <sys/wait.h>
 #include <cstring>
+#include <fcntl.h>
 #include "Request.hpp"
 #include "Route.hpp"
 
