@@ -23,16 +23,9 @@ void    CGI::getContentType()
     _env["CONTENT_TYPE"] = _request->findHeader("Content-type");
 }
 
-void    CGI::getServerName(const ServerConf &server)
+void    CGI::getServerName()
 {
-    std::map<std::string, std::string>::const_iterator  header_ite  = _request->getHeaders().find("Host");
-    std::vector<std::string>::const_iterator            sname_ite   = std::find(server.getNames().begin(), server.getNames().end(),  header_ite->second);
-
-    _env["SERVER_NAME"] = "";
-    if (header_ite == _request->getHeaders().end()
-        || sname_ite == server.getNames().end())
-        return ;
-    _env["SERVER_NAME"] = header_ite->second;
+    _env["SERVER_NAME"] = _request->findHeader("host");
 }
 
 static std::string  addPrefixCapitalize(std::string key)
@@ -110,7 +103,7 @@ void    CGI::prepare(Request const &req,
     getContentLength();
     getRequestMethod();
     getContentType();
-    getServerName(server);
+    getServerName();
     getHeaders();
     _env["PATH_INFO"] = path_info;
     _env["REDIRECT_STATUS"] = "true";

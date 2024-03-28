@@ -84,7 +84,7 @@ static void buildHead(std::stringstream &ss)
     ss << "</head>\n";
 }
 
-std::string HTTPError::buildErrorPage(ServerConf const &conf, int code)
+std::string HTTPError::buildErrorPage(ServerConf const &conf, int &code)
 {
     (void) conf;
     std::map<int, std::string>::iterator ite;

@@ -6,7 +6,7 @@
 /*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/28 09:19:53 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/28 13:55:47 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,8 +42,6 @@ Server::Server(Config &conf) : 	_conf(conf),
 		socketAddress.sin_port = ite->second;
 		socketAddress.sin_addr.s_addr = ite->first;
 		_socketAddresses.push_back(socketAddress);
-
-		std::cout << ntohs(ite->first) << ":" << ntohs(ite->second) << std::endl;
 
 		if (startServer(i) != 0)
 		{
@@ -194,7 +192,7 @@ void Server::loop()
 				if (_clients[j].getState() == Header || _clients[j].getState() == Body)
 					_clients[j].receive(chunk, pkt_len);
 			}
-			else if ((pollfds[i].revents & POLLOUT) &&
+			if ((pollfds[i].revents & POLLOUT) &&
 			(_clients[j].getState() == RespondingHeader || _clients[j].getState() == RespondingBody))
 				_clients[j].respond();
 			if (_clients[j].isExpired())

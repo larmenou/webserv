@@ -38,7 +38,7 @@ class CGI
         void    getContentLength();
         void    getContentType();
         void    getRequestMethod();
-        void    getServerName(const ServerConf &server);
+        void    getServerName();
         void    getHeaders();
         void    parentProc();
         void    childProc();

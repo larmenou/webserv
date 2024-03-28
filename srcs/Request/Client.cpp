@@ -316,12 +316,16 @@ void    Client::bodyDelete(char const *chunk, size_t start)
     if (!fileExists(filename))
     {
         _status = 404;
+        _type = Error;
     }
     else
     {
         _status = 204;
         if (remove(filename.c_str()))
+        {
             _status = 403;
+            _type = Error;
+        }
     }
     _state = RespondingHeader;
 }
@@ -372,6 +376,7 @@ void    Client::bodyPut(char const *chunk, size_t start)
     {
         _type = Error;
         _status = std::strtol(e.what(), NULL, 10);
+        _bodyc = 0;
         _state = RespondingHeader;
         return ;
     }
