@@ -14,6 +14,7 @@ Client::Client(int client_fd,
                     _conf(conf),
                     _ip(ip),
                     _body_response(""),
+                    _headers(""),
                     _pkt_length(0),
                     _bodyc(0)
 {
@@ -465,6 +466,7 @@ void    Client::responsePut()
     {
         http << "HTTP/1.1" << " " << _status << " " << HTTPError::getErrorString(_status) << "\r\nContent-Type: text/html\r\nContent-Length: " << _body_response.length() << "\r\n";
         buildHeaderConnection(http);
+        _bodyc = 0;
     }
     if (_state == RespondingHeader)
         sendHeader();
