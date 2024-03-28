@@ -32,7 +32,7 @@ int main (int ac, char **av)
 			{
 				std::cerr << "Error : " << e.what() << std::endl;
 				if (std::strcmp(e.what(), "Failed to execute CGI.") == 0)
-					return EXIT_FAILURE;
+					return 127;
 				std::cerr << "Restarting server ..." << std::endl;
 				continue;
 			}

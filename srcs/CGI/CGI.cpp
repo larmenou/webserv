@@ -195,7 +195,7 @@ static void waitTimeout(pid_t pid)
     }
     if (ret < 0)
         throw std::runtime_error("500");
-    if (WIFEXITED(s) && WEXITSTATUS(s) != EXIT_SUCCESS)
+    if (WIFEXITED(s) && WEXITSTATUS(s) == 127)
         throw std::runtime_error("503");
 }
 
@@ -209,6 +209,8 @@ void    CGI::start()
     if (_env.size() == 0)
         throw std::runtime_error("500");
     if (pipe(_fds) < 0)
+        throw std::runtime_error("500");
+    if (fcntl(_fds[0], F_SETFL, O_NONBLOCK) < 0)
         throw std::runtime_error("500");
     _pid = fork();
     if (_pid == -1)
@@ -242,11 +244,14 @@ void    CGI::closeCGI()
 
 bool    CGI::receive(const char *chunk, size_t start, size_t _pkt_len)
 {
+    ssize_t rd;
+
     if (_request->getMethod() & POST)
     {
-        _bdc += write(_fds[1], chunk + start, _pkt_len - start);
-        if (_bdc < 0)
+        rd = write(_fds[1], chunk + start, _pkt_len - start);
+        if (rd < 0)
             throw std::runtime_error("500");
+        _bdc += rd;
         if (_bdc >= _request->getContentLength())
             return close(_fds[1]), true;
     } else
@@ -281,7 +286,7 @@ std::string CGI::respond()
     std::stringstream           ss;
     std::string                 line;
     ssize_t                     rd;
-    char                        c;
+    char                        c = 0;
 
     waitTimeout(_pid);
     do {

@@ -82,6 +82,7 @@ int Server::startServer(int i)
 	}
 	if (bind(socket_listen, (sockaddr *)&_socketAddresses[i], sizeof(_socketAddresses[i])) < 0)
 	{
+
 		close(socket_listen);
 		std::cerr << "Cannot connect socket to address" << std::endl;
 		return (1);
@@ -144,7 +145,7 @@ void Server::loop()
 	int 				client_fd = -1;
 	std::vector<pollfd> pollfds;
 	sockaddr_in			client_addr;
-	size_t				pkt_len;
+	ssize_t				pkt_len;
 	char        		chunk[BUFFER_SIZE];
 	
 	initPollfds(&pollfds);
@@ -187,7 +188,7 @@ void Server::loop()
 
 			if (pollfds[i].revents & POLLIN)
 			{
-				pkt_len = recv(pollfds[i].fd, chunk, BUFFER_SIZE - 1, MSG_NOSIGNAL);
+				pkt_len = recv(pollfds[i].fd, chunk, BUFFER_SIZE - 1, MSG_NOSIGNAL | MSG_DONTWAIT);
 				if (pkt_len <= 0)
 					_clients[j].close();
 				if (_clients[j].getState() == Header || _clients[j].getState() == Body)
