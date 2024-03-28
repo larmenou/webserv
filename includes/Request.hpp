@@ -7,7 +7,8 @@
 
 #include "Config.hpp"
 
-#define MAX_HEADER 16000
+#define MAX_HEADER  16000
+#define MAX_PATH     8192
 
 bool    getlineCRLF(std::stringstream &ss, std::string &str);
 void    trimstr(std::string &str);
@@ -16,7 +17,7 @@ void    strtolower(std::string &str);
 class Request
 {
     private :
-        std::string                         _urn;
+        std::string                         _path;
         std::string                         _http_ver;
         long                                _method;
         std::string                         _body;
@@ -34,6 +35,7 @@ class Request
         void    parseFromRaw(std::string raw);
         void    parseLineHeader(std::string &line);
         void    extractGETParams();
+        void    validatePath();
 
     public :
         Request();
@@ -42,7 +44,7 @@ class Request
         ssize_t             getContentLength() const;
         bool                isKeepAlive() const;
         long                getMethod() const;
-        const std::string   getURN() const;
+        const std::string   getPath() const;
         const std::string   getHTTPVersion() const;
         const std::string   getBody() const;
         bool                isParsed() const;

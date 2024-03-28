@@ -61,7 +61,7 @@ Request::~Request()
 bool                Request::isParsed() const { return _isParsed; }
 bool                Request::isKeepAlive() const { return _keep_alive; }
 ssize_t             Request::getContentLength() const { return _content_length; }
-const std::string   Request::getURN() const { return _urn; }
+const std::string   Request::getPath() const { return _path; }
 const std::string   Request::getHTTPVersion() const { return _http_ver; }
 const std::string   Request::getBody() const { return _body; }
 long                Request::getMethod() const { return _method; }
@@ -79,8 +79,8 @@ const std::string   Request::findHeader(std::string key) const
 
 bool    Request::checkExtension(std::string extension) const
 {
-    size_t  id = _urn.find(extension);
-    if (id != std::string::npos && id == _urn.size() - extension.size())
+    size_t  id = _path.find(extension);
+    if (id != std::string::npos && id == _path.size() - extension.size())
         return true;
     return false;
 }
@@ -103,18 +103,33 @@ void    Request::parseLineHeader(std::string &line)
 
 void    Request::extractGETParams()
 {
-    size_t  s = _urn.find("?");
-    if (s == std::string::npos || s + 1 > _urn.size())
+    size_t  s = _path.find("?");
+    if (s == std::string::npos || s + 1 > _path.size())
         return ;
-    size_t  e = _urn.find("#", s);
-    _query_string = _urn.substr(s + 1, e - s);
+    size_t  e = _path.find("#", s);
+    _query_string = _path.substr(s + 1, e - s);
 
-    _urn = _urn.substr(0, s);
+    _path = _path.substr(0, s);
 }
 
-static void getURNFromSS(std::stringstream &ss,
+void    Request::validatePath()
+{
+    size_t  f = 0;
+
+    if (_path.size() > MAX_PATH)
+        throw std::runtime_error("414");
+    if (_path[0] != '/')
+        throw std::runtime_error("400");
+    while ((f = _path.find("../")) != std::string::npos)
+    {
+        _path[f] = '/';
+        _path[f+1] = '/';
+    }
+}
+
+static void getPathFromSS(std::stringstream &ss,
                     long        &method,
-                    std::string &urn, 
+                    std::string &path, 
                     std::string &http_ver)
 {
     std::string line;
@@ -122,7 +137,7 @@ static void getURNFromSS(std::stringstream &ss,
     getlineCRLF(ss, line);
     std::stringstream l(line);
 
-    if (!((l >> method_str) && (l >> urn) && (l >> http_ver)))
+    if (!((l >> method_str) && (l >> path) && (l >> http_ver)))
         throw std::runtime_error("400");
     method = Config::str2perm(method_str);
     if (method == -1)
@@ -134,8 +149,9 @@ void    Request::parseFromRaw(std::string raw)
     std::stringstream   ss(raw);
     std::string         line;
 
-    getURNFromSS(ss, _method, _urn, _http_ver);
+    getPathFromSS(ss, _method, _path, _http_ver);
     extractGETParams();
+    validatePath();
     while (getlineCRLF(ss, line))
     {
         if (line.length() == 0)
@@ -175,7 +191,7 @@ size_t  Request::receive_header(const char *chunk, size_t pkt_length)
 void    Request::reset()
 {
     _raw_header.clear();
-    _urn.clear();
+    _path.clear();
     _http_ver.clear();
     _body.clear();
     _headers.clear();
@@ -187,7 +203,7 @@ void    Request::reset()
 std::ostream    &operator<<(std::ostream &os, const Request &req)
 {
     os << "[" << time(0) << "] " << Config::perm2str(req.getMethod());
-    os << " " << req.getURN();
+    os << " " << req.getPath();
     os << " " << req.getHTTPVersion();
     os << " User-Agent : \"";
     os << req.findHeader("user-agent");

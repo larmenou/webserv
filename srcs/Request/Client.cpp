@@ -73,7 +73,7 @@ void    Client::initServerRoute()
     std::string hostname(_req.findHeader("Host").substr(0, end_hostname));
     
     _server = _conf->getServerFromHostAndIPPort(hostname, _ip, _server_addr);
-    _route = _server.findRouteFromURN(_req.getURN());
+    _route = _server.findRouteFromURN(_req.getPath());
 }
 
 static bool	isDir(std::string path)
@@ -126,10 +126,10 @@ bool    Client::isCGI()
         return false;
     if (_route.getDirFile().size() == 0)
     {
-        id = _req.getURN().find(_route.getCgiExtension());
+        id = _req.getPath().find(_route.getCgiExtension());
         if (id == std::string::npos)
             return false;
-        if (id != _req.getURN().size() - _route.getCgiExtension().size())
+        if (id != _req.getPath().size() - _route.getCgiExtension().size())
             return false;
     }
     else
@@ -139,8 +139,8 @@ bool    Client::isCGI()
         else
             root = _route.getRoot();
         filename = root + "/";
-        filename += _req.getURN().substr(_route.getRoute().length());
-        if (isDir(filename) && _req.getURN()[_req.getURN().size() - 1] != '/')
+        filename += _req.getPath().substr(_route.getRoute().length());
+        if (isDir(filename) && _req.getPath()[_req.getPath().size() - 1] != '/')
             return false;
         id = _route.getDirFile().find(_route.getCgiExtension());
         if (id == std::string::npos)
@@ -190,8 +190,8 @@ std::string Client::buildFilename()
 		root = _route.getRoot();
 
 	filename = root + "/";
-	filename += _req.getURN().substr(_route.getRoute().length());
-	if (isDir(filename) && _req.getURN()[_req.getURN().size() - 1] == '/')
+	filename += _req.getPath().substr(_route.getRoute().length());
+	if (isDir(filename) && _req.getPath()[_req.getPath().size() - 1] == '/')
 		filename += _route.getDirFile();
 	return (filename);
 }
@@ -210,12 +210,12 @@ void    Client::bodyPostGet(char const *chunk, size_t start)
         {
             if (isDir(filename))
             {
-                if (_req.getURN()[_req.getURN().size() - 1] != '/')
+                if (_req.getPath()[_req.getPath().size() - 1] != '/')
                 {
                     std::stringstream http;
 
                     http << "HTTP/1.1" << " " << 302 << " " << HTTPError::getErrorString(302) 
-                    << "\r\nLocation: " << _req.getURN() << '/'
+                    << "\r\nLocation: " << _req.getPath() << '/'
                     << "\r\nContent-Length: 0\r\n\r\n";
                     _headers = http.str();
                     _state = RespondingHeader;
@@ -333,7 +333,7 @@ void    Client::bodyDelete(char const *chunk, size_t start)
 static bool	buildUploadPath(const Request &req, const Route &route, std::string &out)
 {
     out = route.getSavePath();
-    out += req.getURN().substr(route.getRoute().length());
+    out += req.getPath().substr(route.getRoute().length());
     if (out.length() == route.getRoute().length())
         return false;
     return true;
