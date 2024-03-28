@@ -321,7 +321,7 @@ void    Client::bodyDelete(char const *chunk, size_t start)
     else
     {
         _status = 204;
-        if (remove(filename.c_str()))
+        if (isDir(filename) || remove(filename.c_str()))
         {
             _status = 403;
             _type = Error;
