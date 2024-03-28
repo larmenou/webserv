@@ -197,6 +197,7 @@ void  Config::extractLocations(std::string &substr, ServerConf &conf)
         locations.insert(route);
         route = Route();
         substr.erase(location_idx, right - location_idx);
+        substr.insert(substr.begin() + location_idx, 1,';');
     }
     conf.setRoutes(locations);
 }
