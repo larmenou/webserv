@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/27 20:38:07 by rralambo         ###   ########.fr       */
+/*   Updated: 2024/03/28 09:19:53 by larmenou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,8 +43,13 @@ Server::Server(Config &conf) : 	_conf(conf),
 		socketAddress.sin_addr.s_addr = ite->first;
 		_socketAddresses.push_back(socketAddress);
 
+		std::cout << ntohs(ite->first) << ":" << ntohs(ite->second) << std::endl;
+
 		if (startServer(i) != 0)
 		{
+			closeServer();
+			signal(SIGINT, SIG_DFL);
+			signal(SIGQUIT, SIG_DFL);
 			std::cerr << "Failed to start server with PORT: " << ntohs(_socketAddresses[i].sin_port) << std::endl;
 			throw std::runtime_error("Port error");
 		}
@@ -63,16 +68,16 @@ int Server::startServer(int i)
 	int socket_listen = socket(AF_INET, SOCK_STREAM, 0);
 	int enable = 1;
 	
-	if (setsockopt(socket_listen, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
-	{
-		close(socket_listen);
-		std::cerr << "Error setting SO_REUSEADDR" << std::endl;
-		return (1);
-	}
 	if (socket_listen < 0)
 	{
 		close(socket_listen);
 		std::cerr << "Cannot create socket" << std::endl;
+		return (1);
+	}
+	if (setsockopt(socket_listen, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+	{
+		close(socket_listen);
+		std::cerr << "Error setting SO_REUSEADDR" << std::endl;
 		return (1);
 	}
 	if (bind(socket_listen, (sockaddr *)&_socketAddresses[i], sizeof(_socketAddresses[i])) < 0)
