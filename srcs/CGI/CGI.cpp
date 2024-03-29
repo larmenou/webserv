@@ -323,6 +323,8 @@ std::string CGI::respond()
     std::string                 line;
 
     readAllWait();
+    if (_raw_response[0] == 0)
+        throw std::runtime_error("500");
     ss << _raw_response;
     _body.clear();
     _headers.clear();
