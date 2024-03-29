@@ -118,36 +118,17 @@ void    Client::buildHeaderConnection(std::stringstream &http)
 
 bool    Client::isCGI()
 {
-    std::string filename;
+    std::string filename(buildFilename());
     std::string root;
     size_t      id;
 
     if (_route.getCgiPath().size() == 0)
         return false;
-    if (_route.getDirFile().size() == 0)
-    {
-        id = _req.getPath().find(_route.getCgiExtension());
-        if (id == std::string::npos)
-            return false;
-        if (id != _req.getPath().size() - _route.getCgiExtension().size())
-            return false;
-    }
-    else
-    {
-        if (_route.getRoot().length() == 0)
-            root = _server.getRoot();
-        else
-            root = _route.getRoot();
-        filename = root + "/";
-        filename += _req.getPath().substr(_route.getRoute().length());
-        if (isDir(filename) && _req.getPath()[_req.getPath().size() - 1] != '/')
-            return false;
-        id = _route.getDirFile().find(_route.getCgiExtension());
-        if (id == std::string::npos)
-            return false;
-        if (id != _route.getDirFile().size() - _route.getCgiExtension().size())
-            return false;
-    }
+    id = filename.find(_route.getCgiExtension());
+    if (id == std::string::npos)  
+        return false;
+    if (id != filename.size() - _route.getCgiExtension().size())
+        return false;
     return true;
 }
 
