@@ -295,10 +295,13 @@ void    CGI::readAllWait()
                 }
                 else
                     throw std::runtime_error("500");
+                break;
             case 0:
                 stop = false;
+                break;
             default:
                 _raw_response += c;
+                break;
         }
     }
     start = clock();

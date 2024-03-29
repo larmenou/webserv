@@ -88,6 +88,7 @@ class Client
         void    responseDelete();
         void    responseError();
 
+        void    safeSend(const void *data, size_t n);
         void    sendFile();
         void    sendHeader();
         void    sendBodyResponse();

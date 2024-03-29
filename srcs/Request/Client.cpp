@@ -363,21 +363,28 @@ void    Client::bodyPut(char const *chunk, size_t start)
     }
 }
 
-void    Client::sendHeader()
+void    Client::safeSend(const void *data, size_t n)
 {
     ssize_t ret;
 
     ret = send(_client_fd,
-                    _headers.c_str() + _bodyc, 
-                    _headers.size() - _bodyc,
-                    MSG_NOSIGNAL);
-    if (ret < 0)
+                data, 
+                n,
+                MSG_NOSIGNAL);
+    if (ret <= 0)
     {
         _keep_alive = false;
         resetOrClose();
     }
-    _bodyc += ret;
-    if (_bodyc >= (ssize_t)_headers.size())
+    else 
+        _bodyc += ret;
+}
+
+void    Client::sendHeader()
+{
+    safeSend(_headers.c_str() + _bodyc, 
+                _headers.size() - _bodyc);
+    if (_bodyc >= (ssize_t) _headers.size())
     {
         _bodyc = 0;
         _state = RespondingBody;
@@ -386,40 +393,27 @@ void    Client::sendHeader()
 
 void    Client::sendBodyResponse()
 {
-    ssize_t ret;
-
-    ret = send(_client_fd,
-                _body_response.c_str() + _bodyc, 
-                _body_response.size() - _bodyc,
-                MSG_NOSIGNAL);
-    if (ret < 0)
-    {
-        _keep_alive = false;
-        resetOrClose();
-    }
-    if (_bodyc >= (ssize_t)_body_response.size())
+    safeSend(_body_response.c_str() + _bodyc, 
+                _body_response.size() - _bodyc);
+    if (_bodyc >= (ssize_t) _body_response.size())
         resetOrClose();
 }
 
 void    Client::sendFile()
 {
-    char buff[BUFFER_SIZE];
+    char    buff[BUFFER_SIZE];
 
     if (_body_response.size() == 0)
     {
         _out.seekg(_bodyc);
         _out.read(buff, BUFFER_SIZE);
-        _bodyc += send(_client_fd,
-                        buff, 
-                        _out.gcount(),
-                        MSG_NOSIGNAL);
+        safeSend(buff, 
+                    _out.gcount());
     }
     else
     {
-        _bodyc += send(_client_fd, 
-                        _body_response.c_str() + _bodyc, 
-                        _body_response.size() - _bodyc,
-                        MSG_NOSIGNAL);
+        safeSend(_body_response.c_str() + _bodyc, 
+                _body_response.size() - _bodyc);
     }
     if (_bodyc >= (ssize_t)_body_len
         || _out.fail() || _out.eof())
@@ -462,7 +456,7 @@ void    Client::responsePut()
 
 void    Client::responseCgi()
 {
-    std::stringstream http;
+    std::stringstream   http;
 
     if (_state == RespondingHeader)
     {
@@ -491,10 +485,8 @@ void    Client::responseCgi()
     }
     if (_state == RespondingBody)
     {
-        _bodyc += send(_client_fd,
-                    _body_response.c_str() + _bodyc, 
-                    _body_response.size() - _bodyc,
-                    MSG_NOSIGNAL);
+        safeSend(_body_response.c_str() + _bodyc,
+                    _body_response.size() - _bodyc);
         if (_bodyc >= (ssize_t)_body_response.size())
             resetOrClose();
     }
