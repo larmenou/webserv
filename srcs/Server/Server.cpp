@@ -61,6 +61,18 @@ Server::~Server()
 	signal(SIGQUIT, SIG_DFL);
 }
 
+static void	printStartServer(in_addr_t addr, in_port_t port)
+{
+	std::cerr << "\n*** Listening on ADDRESS: ";
+	std::cerr << (addr & 0xff) << "."
+    << ((addr & 0xff00)>>8) << "."
+    << ((addr & 0xff0000)>>16) << "."
+    << ((addr & 0xff000000)>>24);
+	std::cerr << " PORT : " << ntohs(port);
+	std::cerr << "***\n\n";
+	std::cerr << std::flush;
+}
+
 int Server::startServer(int i)
 {
 	int socket_listen = socket(AF_INET, SOCK_STREAM, 0);
@@ -85,14 +97,15 @@ int Server::startServer(int i)
 		std::cerr << "Cannot connect socket to address" << std::endl;
 		return (1);
 	}
+
 	if (listen(socket_listen, 20) < 0)
 	{
 		close(socket_listen);
 		throw std::runtime_error("Socket listen failed");
 	}
 
-	std::cerr << "\n*** Listening on ADDRESS: " << _conf.getServers()[i].getIP() << " PORT: " << _conf.getServers()[i].getPort() << " ***\n\n";
-	
+	fcntl(socket_listen, F_SETFD, FD_CLOEXEC);
+	printStartServer(_socketAddresses[i].sin_addr.s_addr, _socketAddresses[i].sin_port);
 	_sockets_listen.push_back(socket_listen);
 	return (0);
 }
@@ -214,5 +227,7 @@ sockaddr_in	Server::acceptConnection(int &new_socket, int i)
 	new_socket = accept(_sockets_listen[i], (sockaddr *)&client_addr, &client_len);
 	if (new_socket == -1)
 		std::cerr << "Server failed to accept incoming connection" << std::endl;
+	else
+		fcntl(new_socket, F_SETFD, FD_CLOEXEC);
 	return client_addr;
 }

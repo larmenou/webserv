@@ -340,7 +340,7 @@ bool    Config::server_index(std::vector<std::string> &dirs, ServerConf &conf)
 {
     if (dirs.size() != 2)
         return false;
-    conf.setRoot(dirs[1]);
+    conf.setIndex(dirs[1]);
     return true;
 }
 

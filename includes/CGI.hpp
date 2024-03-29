@@ -27,7 +27,8 @@ class CGI
         char                **_env_execve;
 
         pid_t               _pid;
-        int                 _fds[2];
+        int                 _fds_in[2];
+        int                 _fds_out[2];
         bool                _is_started;
         ssize_t              _bdc;
 

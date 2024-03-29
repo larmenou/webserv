@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+
+<h2> PHP shouldn't be rendered here. </h2>
+<?php
+    print_r($_SERVER);
+?>
+
+</body>

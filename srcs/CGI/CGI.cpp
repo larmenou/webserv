@@ -25,7 +25,13 @@ void    CGI::getContentType()
 
 void    CGI::getServerName()
 {
-    _env["SERVER_NAME"] = _request->findHeader("host");
+    std::string hostname(_request->findHeader("host"));
+    size_t      end;
+
+    if ((end = hostname.find(':')) != std::string::npos)
+        _env["SERVER_NAME"] = hostname.substr(0, end);
+    else
+        _env["SERVER_NAME"] = hostname;
 }
 
 static std::string  addPrefixCapitalize(std::string key)
@@ -62,6 +68,11 @@ CGI::CGI() : _env_execve(NULL),
                 _is_started(false),
                 _bdc(0)
 {
+    _fds_in[0] = -1;
+    _fds_in[1] = -1;
+    _fds_out[0] = -1;
+    _fds_out[1] = -1;
+
 }
 
 void    CGI::freeExecEnv()
@@ -77,14 +88,7 @@ void    CGI::freeExecEnv()
 
 CGI::~CGI()
 {
-    freeExecEnv();
-    if (_is_started)
-    {
-        close(_fds[0]);
-        close(_fds[1]);
-    }
-    if (_pid > 0)
-        kill(_pid, SIGKILL);
+    closeCGI();
 }
 
 void    CGI::prepare(Request const &req,
@@ -161,12 +165,21 @@ void    CGI::childProc()
 {
     char        *av[] = {NULL, NULL};
 
-    dup2(_fds[1], STDOUT_FILENO);
-    dup2(_fds[0], STDIN_FILENO);
-    _env_execve = buildEnvFromAttr();
+    dup2(_fds_out[1], STDOUT_FILENO);
+    close(_fds_out[0]);
+    dup2(_fds_in[0], STDIN_FILENO);
+    close(_fds_in[1]);
+    try {
+        _env_execve = buildEnvFromAttr();
+    }
+    catch(const std::exception& e) {
+        throw std::runtime_error("666");
+    }
+    close(_fds_in[0]);
+    close(_fds_out[1]);
     execve(_cgi_path.c_str(), av, _env_execve);
-    close(_fds[1]);
-    close(_fds[0]);
+    close(_fds_out[1]);
+    close(_fds_in[0]);
     throw std::runtime_error("666");
 }
 
@@ -195,15 +208,17 @@ static void waitTimeout(pid_t pid)
 void    CGI::parentProc()
 {
     _raw_response.clear();
+    close(_fds_in[0]);
+    close(_fds_out[1]);
 }
 
 void    CGI::start()
 {
     if (_env.size() == 0)
         throw std::runtime_error("500");
-    if (pipe(_fds) < 0)
+    if (pipe(_fds_in) < 0)
         throw std::runtime_error("500");
-    if (fcntl(_fds[0], F_SETFL, O_NONBLOCK) < 0)
+    if (pipe(_fds_out) < 0)
         throw std::runtime_error("500");
     _pid = fork();
     if (_pid == -1)
@@ -220,11 +235,14 @@ void    CGI::start()
 void    CGI::closeCGI()
 {
     freeExecEnv();
-    if (_is_started)
-    {
-        close(_fds[0]);
-        close(_fds[1]);
-    }
+    if (_fds_in[0] != -1)
+        close(_fds_in[0]);
+    if (_fds_in[1] != -1)
+        close(_fds_in[1]);
+    if (_fds_out[0] != -1)
+        close(_fds_out[0]);
+    if (_fds_out[1] != -1)
+        close(_fds_out[1]);
     if (_pid > 0)
         kill(_pid, SIGKILL);
     _env.clear();
@@ -241,14 +259,14 @@ bool    CGI::receive(const char *chunk, size_t start, size_t _pkt_len)
 
     if (_request->getMethod() & POST)
     {
-        rd = write(_fds[1], chunk + start, _pkt_len - start);
+        rd = write(_fds_in[1], chunk + start, _pkt_len - start);
         if (rd < 0)
             throw std::runtime_error("500");
         _bdc += rd;
         if (_bdc >= _request->getContentLength())
-            return close(_fds[1]), true;
+            return close(_fds_in[1]), true;
     } else
-        return close(_fds[1]), true;
+        return close(_fds_in[1]), true;
     return false;
 }
 
@@ -281,14 +299,14 @@ std::string CGI::respond()
     ssize_t                     rd;
     char                        c = 0;
 
-    waitTimeout(_pid);
     do {
-        rd = read(_fds[0], &c, 1);
+        rd = read(_fds_out[0], &c, 1);
         if (rd < 0)
             throw std::runtime_error("500");
         _raw_response += c;
     } while (rd > 0);
-    close(_fds[0]);
+    close(_fds_out[0]);
+    waitTimeout(_pid);
     ss << _raw_response;
     _body.clear();
     _headers.clear();
