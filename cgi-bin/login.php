@@ -4,10 +4,7 @@ session_start();
 $_SESSION = array();
 
 if (isset($_GET["logout"]))
-{
-    header('Location: login.php');
     setcookie ("user", "", time() - 3600);
-}
 if (isset($_POST['username']) && isset($_POST['password']))
 {
     if (sha1($_POST['password']) === $db[$_POST['username']][0])

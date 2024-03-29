@@ -48,8 +48,8 @@ class CGI
         void    parseRaw();
         char    **buildEnvFromAttr();
 
+        void    readAllWait();
         void    freeExecEnv();
-
     public :
         ~CGI();
         CGI();

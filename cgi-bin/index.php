@@ -21,8 +21,8 @@
         echo "<img src='".$db[$_COOKIE["user"]][1]."' height=500px>";
         echo "<h1> WELCOME President ".$_COOKIE["user"]."!</h1><a href='./login.php?logout'>LOGOUT</a>";
     }
-
 ?>
+    <a href='./test.php'>PHPINFO</a>
 
 </div>
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: larmenou <larmenou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rralambo <rralambo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 08:42:29 by larmenou          #+#    #+#             */
-/*   Updated: 2024/03/28 13:55:47 by larmenou         ###   ########.fr       */
+/*   Updated: 2024/03/29 12:22:26 by rralambo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,7 +104,8 @@ int Server::startServer(int i)
 		throw std::runtime_error("Socket listen failed");
 	}
 
-	fcntl(socket_listen, F_SETFD, FD_CLOEXEC);
+	if (fcntl(socket_listen, F_SETFD, FD_CLOEXEC) < 0)
+		return (1);
 	printStartServer(_socketAddresses[i].sin_addr.s_addr, _socketAddresses[i].sin_port);
 	_sockets_listen.push_back(socket_listen);
 	return (0);
@@ -227,7 +228,10 @@ sockaddr_in	Server::acceptConnection(int &new_socket, int i)
 	new_socket = accept(_sockets_listen[i], (sockaddr *)&client_addr, &client_len);
 	if (new_socket == -1)
 		std::cerr << "Server failed to accept incoming connection" << std::endl;
-	else
-		fcntl(new_socket, F_SETFD, FD_CLOEXEC);
+	if (fcntl(new_socket, F_SETFD, FD_CLOEXEC) < 0)
+	{
+		new_socket = -1;
+		close(new_socket);
+	}
 	return client_addr;
 }

@@ -183,28 +183,6 @@ void    CGI::childProc()
     throw std::runtime_error("666");
 }
 
-static void waitTimeout(pid_t pid)
-{
-    int     s;
-    int     ret;
-    clock_t start;
-
-    start = clock();
-    s = 0;
-    while ((ret = waitpid(pid, &s, WNOHANG)) == 0)
-    {
-        if (((clock() - start) / CLOCKS_PER_SEC) >= GATEWAY_TIMEOUT )
-        {
-            kill(pid, SIGKILL);
-            throw std::runtime_error("504");
-        }
-    }
-    if (ret < 0)
-        throw std::runtime_error("500");
-    if (WIFEXITED(s) && WEXITSTATUS(s) == 127)
-        throw std::runtime_error("503");
-}
-
 void    CGI::parentProc()
 {
     _raw_response.clear();
@@ -219,6 +197,8 @@ void    CGI::start()
     if (pipe(_fds_in) < 0)
         throw std::runtime_error("500");
     if (pipe(_fds_out) < 0)
+        throw std::runtime_error("500");
+    if (fcntl(_fds_out[0], F_SETFL, O_NONBLOCK) < 0)
         throw std::runtime_error("500");
     _pid = fork();
     if (_pid == -1)
@@ -291,22 +271,58 @@ void    CGI::parseHeader(std::stringstream &ss)
     }
 }
 
+void    CGI::readAllWait()
+{
+    ssize_t rd;
+    clock_t start;
+    int     s;
+    int     ret;
+    char    c;
+    bool    stop = true;
+
+    start = clock();
+    while (stop)
+    {
+        rd = read(_fds_out[0], &c, 1);
+        switch (rd)
+        {
+            case -1:
+                if (errno == EAGAIN)
+                {
+                    if ((clock() - start) / CLOCKS_PER_SEC >= GATEWAY_TIMEOUT)
+                        throw std::runtime_error("504");
+                    break;
+                }
+                else
+                    throw std::runtime_error("500");
+            case 0:
+                stop = false;
+            default:
+                _raw_response += c;
+        }
+    }
+    start = clock();
+    while ((ret = waitpid(_pid, &s, WUNTRACED)) == 0)
+    {
+        if (((clock() - start) / CLOCKS_PER_SEC) >= GATEWAY_TIMEOUT )
+        {
+            kill(_pid, SIGKILL);
+            throw std::runtime_error("504");
+        }
+    }
+    if (ret < 0)
+        throw std::runtime_error("500");
+    if (WIFEXITED(s) && WEXITSTATUS(s) == 127)
+        throw std::runtime_error("503");
+}
+
 std::string CGI::respond()
 {
     std::vector<std::string>    out;
     std::stringstream           ss;
     std::string                 line;
-    ssize_t                     rd;
-    char                        c = 0;
 
-    do {
-        rd = read(_fds_out[0], &c, 1);
-        if (rd < 0)
-            throw std::runtime_error("500");
-        _raw_response += c;
-    } while (rd > 0);
-    close(_fds_out[0]);
-    waitTimeout(_pid);
+    readAllWait();
     ss << _raw_response;
     _body.clear();
     _headers.clear();

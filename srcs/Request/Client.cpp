@@ -286,7 +286,7 @@ void    Client::bodyCgi(char const *chunk, size_t start)
             _state = RespondingHeader;
     } catch (std::exception &e) {
         _status = std::strtol(e.what(), NULL, 10);
-        if (_status)
+        if (_status == 666)
             throw std::runtime_error("Failed to execute CGI.");
         _cgi.closeCGI();
         _type = Error;
