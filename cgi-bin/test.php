@@ -4,12 +4,12 @@
     <title>Test GET/POST</title>
 </head>
 <body>
-
-Hello,
 <?php
     print_r($_GET);
     print_r($_POST);
-    print_r($_SERVER);
+    echo "RAW POST : \n";
+    print_r(file_get_contents('php://input'));
+    echo "\n\n";
     phpinfo();
 ?>
 

@@ -259,7 +259,7 @@ bool    Config::listen(std::vector<std::string> &dirs, ServerConf &conf)
     if (dirs.size() != 2)
         return false;
     if (conf.getPort() != -1)
-        return true;
+        return false;
     if (dirs[1].find(':') != std::string::npos)
     {
         split(dirs[1], out, ':');

@@ -134,7 +134,7 @@ bool    Client::isCGI()
 
 void    Client::determineRequestType()
 {
-    if ((_req.getMethod() & _route.getMethodPerms()) == 0 && _req.getMethod() != DELETE)
+    if ((_req.getMethod() & _route.getMethodPerms()) == 0)
     {
         _type = Error;
         _status = 405;
@@ -344,7 +344,8 @@ void    Client::bodyPut(char const *chunk, size_t start)
                     throw std::runtime_error("500");
             }
         }
-        _in.write(chunk + start, _pkt_length - start);
+        if (!_in.write(chunk + start, _pkt_length - start))
+            throw std::runtime_error("403");
         _bodyc += _pkt_length;
         if (_bodyc < 0)
             throw std::runtime_error("500");
