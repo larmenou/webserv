@@ -534,7 +534,7 @@ void    Client::responseError()
 
 void    Client::processBody(char const *chunk, size_t start)
 {
-    if ((size_t)_bodyc + _pkt_length >= _server.getBodySizeLimit())
+    if ((size_t)_bodyc + _pkt_length - start >= _server.getBodySizeLimit())
     {
         _bodyc = 0;
         _type = Error;
